@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <ul>
               ${status ? `<li><strong>Status:</strong> ${status}</li>` : ""}
               ${category ? `<li><strong>Category:</strong> ${category}</li>` : ""}
-              ${date ? `<li><strong>Deadline:</strong> ${date}</li>` : ""}
+              ${date ? `<li><strong>Date:</strong> ${date}</li>` : ""}
               </ul>
             ${link ? `<a href="${link}" target="_blank">Apply / Visit</a>` : ""}
           </div>
