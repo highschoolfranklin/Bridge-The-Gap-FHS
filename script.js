@@ -235,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const filtered = allOpportunities.filter((item) => {
         const normalizedItem = normalizeItem(item);
         const name = getName(normalizedItem);
+        const deadline = getDeadline(normalizedItem);
         const category = getCategory(normalizedItem);
         return (
           name.toLowerCase().includes(query) ||
