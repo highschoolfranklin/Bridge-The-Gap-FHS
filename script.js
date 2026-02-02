@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const filtered = allOpportunities.filter((item) => {
         const normalizedItem = normalizeItem(item);
         const name = getName(normalizedItem);
-        const deadline = getDeadline(normalizedItem);
+        const date = getDate(normalizedItem);
         const category = getCategory(normalizedItem);
         return (
           name.toLowerCase().includes(query) ||
@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const name = getName(normalizedItem);
         const status = normalizedItem.Status || normalizedItem.status || "";
         const notes = getNotes(normalizedItem);
-        const deadline = getDeadline(normalizedItem);
+        const date = getdate(normalizedItem);
         const category = getCategory(normalizedItem);
         const link = getLink(normalizedItem);
         
@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <ul>
               ${status ? `<li><strong>Status:</strong> ${status}</li>` : ""}
               ${category ? `<li><strong>Category:</strong> ${category}</li>` : ""}
-              ${deadline ? `<li><strong>Deadline:</strong> ${deadline}</li>` : ""}
+              ${date ? `<li><strong>Deadline:</strong> ${date}</li>` : ""}
               </ul>
             ${link ? `<a href="${link}" target="_blank">Apply / Visit</a>` : ""}
           </div>
