@@ -176,6 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const description = getDescription(normalizedItem);
         const link = getLink(normalizedItem);
         const deadline = getDeadline(normalizedItem);
+        const date = getDate(normalizedItem);
         const status = normalizedItem.Status || "";
         const image = normalizedItem.Image || normalizedItem.image || "";
         const emoji = normalizedItem.Emoji || normalizedItem.emoji || "";
@@ -256,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const name = getName(normalizedItem);
         const status = normalizedItem.Status || normalizedItem.status || "";
         const notes = getNotes(normalizedItem);
-        const date = getdate(normalizedItem);
+        const date = getDate(normalizedItem);
         const category = getCategory(normalizedItem);
         const link = getLink(normalizedItem);
         
