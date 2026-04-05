@@ -9,9 +9,11 @@ let currentProfile = null;
 let selectedRole = null;
 
 // Auth Tab Switch //
-function switchAuthTab(tab) {
+function switchAuthTab(tab, e) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+
+  if (e) e.target.classList.add('active');
+
   document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
   document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
 }
