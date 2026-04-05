@@ -3,44 +3,186 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      http-equiv="Cache-Control"
-      content="no-cache, no-store, must-revalidate"
-    />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <title>Franklin Resource Hub</title>
+    <title>The Hive — Franklin Resource Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="config.js"></script>
   </head>
   <body>
-    <header>
-      <div class="header-content">
-        <div class="bee-logo">🐝</div>
-        <div class="header-text">
-          <h1>Franklin Resource Hub</h1>
-          <p>
-            Your one-stop place for college help, SAT resources, scholarships, and opportunities.
-          </p>
+
+    <!-- ======================== AUTH SCREEN ======================== -->
+    <div id="auth-screen" class="auth-screen">
+      <div class="auth-bg-honeycomb"></div>
+      <div class="auth-container">
+        <div class="auth-logo">
+          <div class="auth-bee">🐝</div>
+          <h1 class="auth-title">The Hive</h1>
+          <p class="auth-subtitle">Franklin High School Resource Hub</p>
+        </div>
+
+        <!-- Step 1: Login or Signup choice -->
+        <div id="auth-step-1" class="auth-card">
+          <h2>Welcome Back</h2>
+          <p class="auth-desc">Sign in or create your account to access The Hive.</p>
+          <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+            <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+          </div>
+
+          <!-- Login Form -->
+          <div id="login-form" class="auth-form">
+            <input type="email" id="login-email" class="auth-input" placeholder="School Email" />
+            <input type="password" id="login-password" class="auth-input" placeholder="Password" />
+            <button class="auth-btn" onclick="handleLogin()">Sign In</button>
+            <p id="login-error" class="auth-error"></p>
+          </div>
+
+          <!-- Signup Form -->
+          <div id="signup-form" class="auth-form hidden">
+            <input type="email" id="signup-email" class="auth-input" placeholder="School Gmail (@gmail.com)" />
+            <input type="password" id="signup-password" class="auth-input" placeholder="Create Password (6+ characters)" />
+            <input type="text" id="signup-name" class="auth-input" placeholder="Full Name" />
+            <div class="role-selector">
+              <p class="role-label">I am a:</p>
+              <div class="role-options">
+                <div class="role-option" data-role="student" onclick="selectRole('student')">
+                  <span class="role-icon">🎓</span>
+                  <span>Student</span>
+                </div>
+                <div class="role-option" data-role="parent" onclick="selectRole('parent')">
+                  <span class="role-icon">👨‍👩‍👧</span>
+                  <span>Parent</span>
+                </div>
+                <div class="role-option" data-role="counselor" onclick="selectRole('counselor')">
+                  <span class="role-icon">📋</span>
+                  <span>Counselor</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Student extras -->
+            <div id="student-fields" class="role-fields hidden">
+              <input type="text" id="student-id" class="auth-input" placeholder="Student ID (from school)" />
+              <input type="text" id="grade-level" class="auth-input" placeholder="Grade Level (9, 10, 11, 12)" />
+            </div>
+
+            <!-- Parent extras -->
+            <div id="parent-fields" class="role-fields hidden">
+              <input type="text" id="parent-student-code" class="auth-input" placeholder="Student Code (given by your student)" />
+            </div>
+
+            <!-- Counselor extras -->
+            <div id="counselor-fields" class="role-fields hidden">
+              <input type="text" id="counselor-name" class="auth-input" placeholder="Full Name" />
+              <input type="text" id="counselor-dept" class="auth-input" placeholder="Department / Title" />
+            </div>
+
+            <button class="auth-btn" onclick="handleSignup()">Create Account</button>
+            <p id="signup-error" class="auth-error"></p>
+          </div>
         </div>
       </div>
-      <nav>
-        <button class="tab-btn" data-tab="college">College + SAT Help</button>
-        <button class="tab-btn" data-tab="opportunities">Opportunities</button>
-        <button class="tab-btn" data-tab="scholarships">Scholarships</button>
-      </nav>
-    </header>
+    </div>
 
-    <section id="content"></section>
+    <!-- ======================== MAIN APP ======================== -->
+    <div id="app" class="hidden">
 
-    <footer>
-      <p>
-        Built by a Franklin High student & Business club | Connected with
-        <a href="https://fhsbuzz.com/" target="_blank"
-          >Franklin Online Newspaper</a
-        >
-      </p>
-    </footer>
+      <!-- STUDENT APP -->
+      <div id="student-app" class="hidden">
+        <header>
+          <div class="header-content">
+            <div class="bee-logo">🐝</div>
+            <div class="header-text">
+              <h1>The Hive</h1>
+              <p id="student-welcome">Franklin Resource Hub</p>
+            </div>
+            <div class="header-actions">
+              <span id="student-code-display" class="student-code-badge"></span>
+              <button class="signout-btn" onclick="signOut()">Sign Out</button>
+            </div>
+          </div>
+          <nav>
+            <button class="tab-btn" data-tab="college">📚 College + SAT Help</button>
+            <button class="tab-btn" data-tab="opportunities">🌟 Opportunities</button>
+            <button class="tab-btn" data-tab="scholarships">💰 Scholarships</button>
+            <button class="tab-btn" data-tab="progress">📊 My Progress</button>
+            <button class="tab-btn" data-tab="sat">📝 SAT Tracker</button>
+            <button class="tab-btn" data-tab="colleges">🏛️ College Research</button>
+            <button class="tab-btn" data-tab="todo">✅ To-Do List</button>
+          </nav>
+        </header>
+        <section id="content"></section>
+        <footer>
+          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank">Franklin Online Newspaper</a></p>
+        </footer>
+      </div>
 
-    <script src="script.js"></script>
+      <!-- PARENT APP -->
+      <div id="parent-app" class="hidden">
+        <header>
+          <div class="header-content">
+            <div class="bee-logo">🐝</div>
+            <div class="header-text">
+              <h1>The Hive</h1>
+              <p id="parent-welcome">Parent Dashboard</p>
+            </div>
+            <div class="header-actions">
+              <button class="signout-btn" onclick="signOut()">Sign Out</button>
+            </div>
+          </div>
+          <nav>
+            <button class="tab-btn" data-tab="parent-overview">👁️ Overview</button>
+            <button class="tab-btn" data-tab="parent-scholarships">💰 Scholarship Progress</button>
+            <button class="tab-btn" data-tab="parent-sat">📝 SAT Progress</button>
+            <button class="tab-btn" data-tab="parent-colleges">🏛️ College Research</button>
+            <button class="tab-btn" data-tab="parent-todo">✅ To-Do List</button>
+            <button class="tab-btn" data-tab="parent-transcript">📄 Transcript</button>
+          </nav>
+        </header>
+        <section id="parent-content"></section>
+        <footer>
+          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank">Franklin Online Newspaper</a></p>
+        </footer>
+      </div>
+
+      <!-- COUNSELOR APP -->
+      <div id="counselor-app" class="hidden">
+        <header>
+          <div class="header-content">
+            <div class="bee-logo">🐝</div>
+            <div class="header-text">
+              <h1>The Hive</h1>
+              <p id="counselor-welcome">Counselor Dashboard</p>
+            </div>
+            <div class="header-actions">
+              <button class="signout-btn" onclick="signOut()">Sign Out</button>
+            </div>
+          </div>
+          <nav>
+            <button class="tab-btn" data-tab="counselor-students">👥 My Students</button>
+            <button class="tab-btn" data-tab="counselor-scholarships">💰 Scholarships</button>
+            <button class="tab-btn" data-tab="counselor-opportunities">🌟 Opportunities</button>
+            <button class="tab-btn" data-tab="counselor-resources">📚 Resources</button>
+            <button class="tab-btn" data-tab="counselor-transcript">📄 Upload Transcript</button>
+            <button class="tab-btn" data-tab="counselor-reminders">🔔 Reminders</button>
+          </nav>
+        </header>
+        <section id="counselor-content"></section>
+        <footer>
+          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank">Franklin Online Newspaper</a></p>
+        </footer>
+      </div>
+
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="student.js"></script>
+    <script src="parent.js"></script>
+    <script src="counselor.js"></script>
   </body>
 </html>
