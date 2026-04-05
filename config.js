@@ -4,6 +4,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // EmailJS Configuration
 const EMAILJS_SERVICE_ID = "service_a28vktd";
+const EMAILJS_PUBLIC_KEY = "GRS6z9jufvltQJ6H0";
 const EMAILJS_TEMPLATE_LETTER = "template_szo5gvp";
 const EMAILJS_TEMPLATE_REMINDER = "template_z2sah5c";
 const SENDER_EMAIL = "highschoolfranklin9@gmail.com";
