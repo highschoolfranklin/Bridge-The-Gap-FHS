@@ -13,7 +13,7 @@ function trackTabView(app, tabId) {
     /* ignore quota / private mode */
   }
 
-  if (typeof supabase !== 'undefined' && currentUser && currentUser.id) {
+  if (typeof supabase !== 'undefined' && typeof currentUser !== 'undefined' && currentUser && currentUser.id) {
     supabase
       .from('analytics_events')
       .insert({

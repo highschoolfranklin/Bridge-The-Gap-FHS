@@ -945,13 +945,13 @@ th{background:#f0f4f0;}
 <table><thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Deadline</th></tr></thead><tbody>${progressRows}</tbody></table>
 
 <h2>College list</h2>
-<table><thead><tr><th>School</th><th>Location</th><th>Interest</th><th>Rank</th></thead><tbody>${collegeRows}</tbody></table>
+<table><thead><tr><th>School</th><th>Location</th><th>Interest</th><th>Rank</th></tr></thead><tbody>${collegeRows}</tbody></table>
 
 <h2>Practice scores</h2>
-<table><thead><tr><th>Score</th><th>Date</th></thead><tbody>${scoreRows}</tbody></table>
+<table><thead><tr><th>Score</th><th>Date</th></tr></thead><tbody>${scoreRows}</tbody></table>
 
 <h2>To-do list</h2>
-<table><thead><tr><th>Task</th><th>Status</th><th>Due</th></thead><tbody>${todoRows}</tbody></table>
+<table><thead><tr><th>Task</th><th>Status</th><th>Due</th></tr></thead><tbody>${todoRows}</tbody></table>
 
 <p class="meta" style="margin-top:1.5rem;">Printed from The Hive — Franklin High School Resource Hub.</p>
 </body></html>`;
