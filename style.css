@@ -230,6 +230,14 @@ body {
 
 /* HEADER & NAVIGATION */
 
+#student-app header,
+#parent-app header,
+#counselor-app header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
 header {
   background: linear-gradient(135deg, var(--green-mid) 0%, var(--green-dark) 100%);
   color: white;
@@ -326,6 +334,13 @@ nav {
   gap: 0.5rem;
   position: relative;
   z-index: 1;
+}
+
+.app-nav-tablist {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .tab-btn {
@@ -827,6 +842,14 @@ canvas { display: block; max-width: 100%; }
 
 .back-btn:hover { background: #f0f7f0; }
 
+.counselor-detail-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
 /* LOADING & EMPTY STATES */
 
 .loading-spinner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; gap: 1rem; }
@@ -934,6 +957,17 @@ footer a:hover { color: var(--gold-light); }
 .skip-link:focus {
   left: 0.5rem;
   outline: 3px solid var(--gold-light);
+}
+
+.app-skip {
+  z-index: 10002;
+}
+
+#content:focus-visible,
+#parent-content:focus-visible,
+#counselor-content:focus-visible {
+  outline: 3px solid rgba(255, 215, 0, 0.75);
+  outline-offset: 4px;
 }
 
 .sr-only {

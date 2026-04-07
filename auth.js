@@ -154,10 +154,49 @@ function closePrivacyModal() {
   document.body.style.overflow = '';
 }
 
+function bindTablistKeyboard(rootSelector) {
+  const root = document.querySelector(rootSelector);
+  if (!root) return;
+  const tablist = root.querySelector('[role="tablist"]');
+  if (!tablist) return;
+  tablist.addEventListener('keydown', (e) => {
+    const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+    if (!tabs.length) return;
+    let idx = tabs.indexOf(document.activeElement);
+    if (idx < 0) {
+      idx = tabs.findIndex(t => t.getAttribute('aria-current') === 'true');
+      if (idx < 0) return;
+    }
+    let next = idx;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      next = (idx + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      next = (idx - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      next = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    tabs[next].focus();
+    tabs[next].click();
+  });
+}
+
 // Route to correct dashboard //
 function routeToApp(role) {
+  document.getElementById('auth-profile-error')?.classList.add('hidden');
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+
+  ['student-app', 'parent-app', 'counselor-app'].forEach((id) => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
 
   if (role === 'student') {
     document.getElementById('student-app').classList.remove('hidden');

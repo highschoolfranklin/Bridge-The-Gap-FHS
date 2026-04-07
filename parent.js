@@ -13,8 +13,12 @@ async function initParentApp() {
   const buttons = document.querySelectorAll('#parent-app .tab-btn');
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => b.classList.remove('active'));
+      buttons.forEach(b => {
+        b.classList.remove('active');
+        b.removeAttribute('aria-current');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-current', 'true');
       loadParentSection(btn.dataset.tab);
     });
   });
@@ -25,7 +29,23 @@ async function initParentApp() {
   }
 
   loadParentSection('parent-overview');
-  document.querySelector('[data-tab="parent-overview"]').classList.add('active');
+  const firstTab = document.querySelector('#parent-app [data-tab="parent-overview"]');
+  firstTab.classList.add('active');
+  firstTab.setAttribute('aria-current', 'true');
+  bindTablistKeyboard('#parent-app');
+}
+
+async function printParentSummary() {
+  if (!linkedStudent) {
+    showToast('No student linked to your account.', true);
+    return;
+  }
+  await openStudentSummaryPrint(linkedStudent.id, {
+    docTitle: 'Student progress summary (parent view)',
+    subtitle: 'Read-only snapshot for your linked student.',
+    studentName: linkedStudent.name,
+    studentEmail: linkedStudent.email
+  });
 }
 
 async function loadParentSection(type) {

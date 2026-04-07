@@ -117,6 +117,7 @@
 
       <!-- STUDENT APP -->
       <div id="student-app" class="hidden">
+        <a href="#content" class="skip-link app-skip">Skip to main content</a>
         <header>
           <div class="header-content">
             <div class="bee-logo">🐝</div>
@@ -131,16 +132,18 @@
             </div>
           </div>
           <nav class="app-nav" aria-label="Student sections">
-            <button type="button" class="tab-btn" data-tab="college">📚 College + SAT Help</button>
-            <button type="button" class="tab-btn" data-tab="opportunities">🌟 Opportunities</button>
-            <button type="button" class="tab-btn" data-tab="scholarships">💰 Scholarships</button>
-            <button type="button" class="tab-btn" data-tab="progress">📊 My Progress</button>
-            <button type="button" class="tab-btn" data-tab="sat">📝 SAT Tracker</button>
-            <button type="button" class="tab-btn" data-tab="colleges">🏛️ College Research</button>
-            <button type="button" class="tab-btn" data-tab="todo">✅ To-Do List</button>
+            <div class="app-nav-tablist" role="tablist">
+              <button type="button" role="tab" class="tab-btn" data-tab="college" aria-controls="content">📚 College + SAT Help</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="opportunities" aria-controls="content">🌟 Opportunities</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="scholarships" aria-controls="content">💰 Scholarships</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="progress" aria-controls="content">📊 My Progress</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="sat" aria-controls="content">📝 SAT Tracker</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="colleges" aria-controls="content">🏛️ College Research</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="todo" aria-controls="content">✅ To-Do List</button>
+            </div>
           </nav>
         </header>
-        <div id="student-main" role="main"><section id="content" aria-live="polite"></section></div>
+        <div id="student-main" role="main"><section id="content" aria-live="polite" tabindex="-1"></section></div>
         <footer>
           <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank" rel="noopener noreferrer">Franklin Online Newspaper</a></p>
           <p class="footer-meta"><button type="button" class="footer-link-btn" onclick="openPrivacyModal()">Privacy &amp; data</button></p>
@@ -149,6 +152,7 @@
 
       <!-- PARENT APP -->
       <div id="parent-app" class="hidden">
+        <a href="#parent-content" class="skip-link app-skip">Skip to main content</a>
         <header>
           <div class="header-content">
             <div class="bee-logo">🐝</div>
@@ -157,19 +161,22 @@
               <p id="parent-welcome">Parent Dashboard</p>
             </div>
             <div class="header-actions">
+              <button type="button" class="signout-btn header-tool-btn" onclick="printParentSummary()" title="Print a read-only summary of your student’s progress">Print summary</button>
               <button type="button" class="signout-btn" onclick="signOut()">Sign Out</button>
             </div>
           </div>
           <nav class="app-nav" aria-label="Parent sections">
-            <button type="button" class="tab-btn" data-tab="parent-overview">👁️ Overview</button>
-            <button type="button" class="tab-btn" data-tab="parent-scholarships">💰 Scholarship Progress</button>
-            <button type="button" class="tab-btn" data-tab="parent-sat">📝 SAT Progress</button>
-            <button type="button" class="tab-btn" data-tab="parent-colleges">🏛️ College Research</button>
-            <button type="button" class="tab-btn" data-tab="parent-todo">✅ To-Do List</button>
-            <button type="button" class="tab-btn" data-tab="parent-transcript">📄 Transcript</button>
+            <div class="app-nav-tablist" role="tablist">
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-overview" aria-controls="parent-content">👁️ Overview</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-scholarships" aria-controls="parent-content">💰 Scholarship Progress</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-sat" aria-controls="parent-content">📝 SAT Progress</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-colleges" aria-controls="parent-content">🏛️ College Research</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-todo" aria-controls="parent-content">✅ To-Do List</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-transcript" aria-controls="parent-content">📄 Transcript</button>
+            </div>
           </nav>
         </header>
-        <div id="parent-main" role="main"><section id="parent-content" aria-live="polite"></section></div>
+        <div id="parent-main" role="main"><section id="parent-content" aria-live="polite" tabindex="-1"></section></div>
         <footer>
           <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank" rel="noopener noreferrer">Franklin Online Newspaper</a></p>
           <p class="footer-meta"><button type="button" class="footer-link-btn" onclick="openPrivacyModal()">Privacy &amp; data</button></p>
@@ -178,6 +185,7 @@
 
       <!-- COUNSELOR APP -->
       <div id="counselor-app" class="hidden">
+        <a href="#counselor-content" class="skip-link app-skip">Skip to main content</a>
         <header>
           <div class="header-content">
             <div class="bee-logo">🐝</div>
@@ -186,19 +194,22 @@
               <p id="counselor-welcome">Counselor Dashboard</p>
             </div>
             <div class="header-actions">
+              <button type="button" class="signout-btn header-tool-btn" onclick="printCounselorRosterSummary()" title="Print your student list and recent requests">Print summary</button>
               <button type="button" class="signout-btn" onclick="signOut()">Sign Out</button>
             </div>
           </div>
           <nav class="app-nav" aria-label="Counselor sections">
-            <button type="button" class="tab-btn" data-tab="counselor-students">👥 My Students</button>
-            <button type="button" class="tab-btn" data-tab="counselor-scholarships">💰 Scholarships</button>
-            <button type="button" class="tab-btn" data-tab="counselor-opportunities">🌟 Opportunities</button>
-            <button type="button" class="tab-btn" data-tab="counselor-resources">📚 Resources</button>
-            <button type="button" class="tab-btn" data-tab="counselor-transcript">📄 Upload Transcript</button>
-            <button type="button" class="tab-btn" data-tab="counselor-reminders">🔔 Reminders</button>
+            <div class="app-nav-tablist" role="tablist">
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-students" aria-controls="counselor-content">👥 My Students</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-scholarships" aria-controls="counselor-content">💰 Scholarships</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-opportunities" aria-controls="counselor-content">🌟 Opportunities</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-resources" aria-controls="counselor-content">📚 Resources</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-transcript" aria-controls="counselor-content">📄 Upload Transcript</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-reminders" aria-controls="counselor-content">🔔 Reminders</button>
+            </div>
           </nav>
         </header>
-        <div id="counselor-main" role="main"><section id="counselor-content" aria-live="polite"></section></div>
+        <div id="counselor-main" role="main"><section id="counselor-content" aria-live="polite" tabindex="-1"></section></div>
         <footer>
           <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank" rel="noopener noreferrer">Franklin Online Newspaper</a></p>
           <p class="footer-meta"><button type="button" class="footer-link-btn" onclick="openPrivacyModal()">Privacy &amp; data</button></p>

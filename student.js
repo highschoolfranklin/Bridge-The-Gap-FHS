@@ -24,15 +24,22 @@ function initStudentApp() {
   const buttons = document.querySelectorAll('#student-app .tab-btn');
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => b.classList.remove('active'));
+      buttons.forEach(b => {
+        b.classList.remove('active');
+        b.removeAttribute('aria-current');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-current', 'true');
       loadStudentSection(btn.dataset.tab);
     });
   });
   loadStudentSection('college');
-  document.querySelector('[data-tab="college"]').classList.add('active');
+  const firstTab = document.querySelector('#student-app [data-tab="college"]');
+  firstTab.classList.add('active');
+  firstTab.setAttribute('aria-current', 'true');
   checkScholarshipDeadlines();
   maybeShowStudentOnboarding();
+  bindTablistKeyboard('#student-app');
 }
 
 function loadStudentSection(type) {
@@ -881,14 +888,27 @@ function dismissStudentOnboarding() {
   if (currentUser) localStorage.setItem(`hive_onboarding_done_${currentUser.id}`, '1');
 }
 
-async function printMeetingSummary() {
-  if (!currentUser || !currentProfile) return;
+async function openStudentSummaryPrint(studentId, options) {
+  const opts = options || {};
+  let displayName = opts.studentName;
+  let displayEmail = opts.studentEmail;
+  if (!displayName || !displayEmail) {
+    const { data: prof } = await supabase.from('profiles').select('name, email').eq('id', studentId).single();
+    if (prof) {
+      displayName = displayName || prof.name;
+      displayEmail = displayEmail || prof.email;
+    }
+  }
+
+  const docTitle = opts.docTitle || 'Student summary';
+  const subtitle = opts.subtitle || '';
+
   const [progressRes, satRes, scoresRes, collegesRes, todosRes] = await Promise.all([
-    supabase.from('progress').select('*').eq('student_id', currentUser.id).order('created_at', { ascending: false }),
-    supabase.from('sat_tracker').select('*').eq('student_id', currentUser.id).maybeSingle(),
-    supabase.from('sat_scores').select('*').eq('student_id', currentUser.id).order('created_at', { ascending: false }),
-    supabase.from('college_research').select('*').eq('student_id', currentUser.id).order('rank', { ascending: true }),
-    supabase.from('todos').select('*').eq('student_id', currentUser.id).order('created_at', { ascending: false })
+    supabase.from('progress').select('*').eq('student_id', studentId).order('created_at', { ascending: false }),
+    supabase.from('sat_tracker').select('*').eq('student_id', studentId).maybeSingle(),
+    supabase.from('sat_scores').select('*').eq('student_id', studentId).order('created_at', { ascending: false }),
+    supabase.from('college_research').select('*').eq('student_id', studentId).order('rank', { ascending: true }),
+    supabase.from('todos').select('*').eq('student_id', studentId).order('created_at', { ascending: false })
   ]);
 
   const progress = progressRes.data || [];
@@ -905,8 +925,8 @@ async function printMeetingSummary() {
     deadline_missed: 'Deadline missed'
   };
 
-  const name = escapeHtml(currentProfile.name);
-  const email = escapeHtml(currentProfile.email || '');
+  const name = escapeHtml(displayName || 'Student');
+  const email = escapeHtml(displayEmail || '');
   const generated = new Date().toLocaleString();
 
   const progressRows = progress.length
@@ -925,7 +945,9 @@ async function printMeetingSummary() {
     ? todos.map(t => `<tr><td>${escapeHtml(t.title)}</td><td>${t.completed ? 'Done' : 'Open'}</td><td>${escapeHtml(t.due_date || '—')}</td></tr>`).join('')
     : '<tr><td colspan="3">No tasks yet.</td></tr>';
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Counselor meeting summary — ${name}</title>
+  const subtitleHtml = subtitle ? `<p class="meta">${escapeHtml(subtitle)}</p>` : '';
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>${escapeHtml(docTitle)} — ${name}</title>
 <style>
 body{font-family:system-ui,-apple-system,sans-serif;padding:1.5rem;max-width:900px;margin:0 auto;color:#1a1a1a;line-height:1.5;}
 h1{color:#1e4a1e;font-size:1.35rem;} h2{font-size:1.05rem;margin-top:1.25rem;color:#2c632c;border-bottom:1px solid #e5e7eb;padding-bottom:0.25rem;}
@@ -935,7 +957,8 @@ th{background:#f0f4f0;}
 .meta{color:#666;font-size:0.9rem;margin-bottom:1rem;}
 @media print { body{padding:0.5rem;} h1{font-size:1.2rem;} }
 </style></head><body>
-<h1>Counselor meeting summary</h1>
+<h1>${escapeHtml(docTitle)}</h1>
+${subtitleHtml}
 <p class="meta"><strong>Student:</strong> ${name}<br/><strong>Email:</strong> ${email}<br/><strong>Generated:</strong> ${escapeHtml(generated)}</p>
 
 <h2>SAT</h2>
@@ -965,4 +988,13 @@ th{background:#f0f4f0;}
   w.document.close();
   w.focus();
   setTimeout(() => { try { w.print(); } catch (e) {} }, 300);
+}
+
+async function printMeetingSummary() {
+  if (!currentUser || !currentProfile) return;
+  await openStudentSummaryPrint(currentUser.id, {
+    docTitle: 'Counselor meeting summary',
+    studentName: currentProfile.name,
+    studentEmail: currentProfile.email
+  });
 }

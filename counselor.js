@@ -5,13 +5,83 @@ async function initCounselorApp() {
   const buttons = document.querySelectorAll('#counselor-app .tab-btn');
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => b.classList.remove('active'));
+      buttons.forEach(b => {
+        b.classList.remove('active');
+        b.removeAttribute('aria-current');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-current', 'true');
       loadCounselorSection(btn.dataset.tab);
     });
   });
   loadCounselorSection('counselor-students');
-  document.querySelector('[data-tab="counselor-students"]').classList.add('active');
+  const firstTab = document.querySelector('#counselor-app [data-tab="counselor-students"]');
+  firstTab.classList.add('active');
+  firstTab.setAttribute('aria-current', 'true');
+  bindTablistKeyboard('#counselor-app');
+}
+
+async function printCounselorRosterSummary() {
+  if (!currentProfile) return;
+  const { data: students } = await supabase.from('profiles')
+    .select('id, name, email, grade_level, student_id')
+    .eq('role', 'student')
+    .eq('counselor_email', currentProfile.email);
+  const { data: notifs } = await supabase.from('counselor_notifications')
+    .select('*')
+    .eq('counselor_email', currentProfile.email)
+    .order('created_at', { ascending: false })
+    .limit(40);
+
+  const roster = students || [];
+  const list = notifs || [];
+  const counselorName = escapeHtml(currentProfile.name);
+  const generated = new Date().toLocaleString();
+
+  const rosterRows = roster.length
+    ? roster.map(s => `<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.email || '')}</td><td>${escapeHtml(s.grade_level || '—')}</td><td>${escapeHtml(s.student_id || '—')}</td></tr>`).join('')
+    : '<tr><td colspan="4">No students have added your email yet.</td></tr>';
+
+  const notifRows = list.length
+    ? list.map(n => `<tr><td>${escapeHtml(n.student_name || '')}</td><td>${escapeHtml(n.type || '')}</td><td>${escapeHtml((n.message || '').slice(0, 200))}</td><td>${escapeHtml(new Date(n.created_at).toLocaleDateString())}</td></tr>`).join('')
+    : '<tr><td colspan="4">No recent requests.</td></tr>';
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Counselor workspace summary</title>
+<style>
+body{font-family:system-ui,sans-serif;padding:1.5rem;max-width:900px;margin:0 auto;color:#1a1a1a;line-height:1.45;}
+h1{color:#1e4a1e;font-size:1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:0.5rem;}
+th,td{border:1px solid #e5e7eb;padding:0.45rem 0.5rem;text-align:left;}
+th{background:#f0f4f0;}
+.meta{color:#666;font-size:0.9rem;margin-bottom:1rem;}
+@media print { body { padding: 0.5rem; } }
+</style></head><body>
+<h1>Counselor workspace summary</h1>
+<p class="meta"><strong>Counselor:</strong> ${counselorName}<br/><strong>Generated:</strong> ${escapeHtml(generated)}</p>
+<h2>Students linked to you</h2>
+<table><thead><tr><th>Name</th><th>Email</th><th>Grade</th><th>Student ID</th></tr></thead><tbody>${rosterRows}</tbody></table>
+<h2>Recent notifications &amp; requests</h2>
+<table><thead><tr><th>Student</th><th>Type</th><th>Message (excerpt)</th><th>Date</th></tr></thead><tbody>${notifRows}</tbody></table>
+<p class="meta" style="margin-top:1.25rem;">Printed from The Hive — Franklin High School Resource Hub.</p>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) {
+    showToast('Allow pop-ups to print your summary.', true);
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { try { w.print(); } catch (e) {} }, 300);
+}
+
+async function printCounselorStudentSummary(studentId, studentName) {
+  await openStudentSummaryPrint(studentId, {
+    docTitle: 'Student summary (counselor view)',
+    subtitle: 'Read-only snapshot for your caseload.',
+    studentName: studentName || undefined
+  });
 }
 
 async function loadCounselorSection(type) {
@@ -90,7 +160,7 @@ async function viewStudentDetail(studentId, studentName) {
   const content = document.getElementById('counselor-content');
   const [progressRes, satRes, scoresRes, collegesRes, todosRes] = await Promise.all([
     supabase.from('progress').select('*').eq('student_id', studentId),
-    supabase.from('sat_tracker').select('*').eq('student_id', studentId).single(),
+    supabase.from('sat_tracker').select('*').eq('student_id', studentId).maybeSingle(),
     supabase.from('sat_scores').select('*').eq('student_id', studentId).order('created_at', { ascending: false }),
     supabase.from('college_research').select('*').eq('student_id', studentId).order('rank', { ascending: true }),
     supabase.from('todos').select('*').eq('student_id', studentId)
@@ -106,7 +176,10 @@ async function viewStudentDetail(studentId, studentName) {
   progress.forEach(p => { statusCounts[p.status] = (statusCounts[p.status] || 0) + 1; });
 
   content.innerHTML = `
-    <button class="back-btn" onclick="loadCounselorSection('counselor-students')">← Back to Students</button>
+    <div class="counselor-detail-toolbar">
+      <button type="button" class="back-btn" onclick="loadCounselorSection('counselor-students')">← Back to Students</button>
+      <button type="button" class="save-btn" onclick='printCounselorStudentSummary(${JSON.stringify(studentId)}, ${JSON.stringify(studentName)})'>Print student summary</button>
+    </div>
     <div class="section-header">
       <h2 class="section-title">📊 ${studentName}'s Dashboard</h2>
     </div>
