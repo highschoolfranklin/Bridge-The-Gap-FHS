@@ -58,6 +58,7 @@ create table if not exists college_research (
   notes text,
   interest text,
   rank integer,
+  logo_url text,
   counselor_comment text,
   created_at timestamptz default now()
 );

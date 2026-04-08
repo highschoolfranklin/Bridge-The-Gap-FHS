@@ -7,22 +7,43 @@ emailjs.init(EMAILJS_PUBLIC_KEY);
 let currentUser = null;
 let currentProfile = null;
 let selectedRole = null;
+let intentionalSignOut = false;
 
 // Auth Tab Switch //
 function switchAuthTab(tab, e) {
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-tab').forEach(t => {
+    t.classList.remove('active');
+    t.setAttribute('aria-selected', 'false');
+  });
+  if (e) {
+    e.currentTarget.classList.add('active');
+    e.currentTarget.setAttribute('aria-selected', 'true');
+  }
 
-  if (e) e.currentTarget.classList.add('active');
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+  const showLogin = tab === 'login';
+  loginForm.classList.toggle('hidden', !showLogin);
+  signupForm.classList.toggle('hidden', showLogin);
+  loginForm.setAttribute('aria-hidden', showLogin ? 'false' : 'true');
+  signupForm.setAttribute('aria-hidden', showLogin ? 'true' : 'false');
 
-  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
+  const loginErr = document.getElementById('login-error');
+  const signupErr = document.getElementById('signup-error');
+  if (loginErr) { loginErr.textContent = ''; loginErr.style.color = ''; }
+  if (signupErr) { signupErr.textContent = ''; signupErr.style.color = ''; }
 }
 
 // Role Selection //
 function selectRole(role) {
   selectedRole = role;
-  document.querySelectorAll('.role-option').forEach(o => o.classList.remove('active'));
-  document.querySelector(`[data-role="${role}"]`).classList.add('active');
+  document.querySelectorAll('.role-option').forEach(o => {
+    o.classList.remove('active');
+    o.setAttribute('aria-pressed', 'false');
+  });
+  const el = document.querySelector(`[data-role="${role}"]`);
+  el.classList.add('active');
+  el.setAttribute('aria-pressed', 'true');
   document.querySelectorAll('.role-fields').forEach(f => f.classList.add('hidden'));
   document.getElementById(`${role}-fields`).classList.remove('hidden');
 }
@@ -38,6 +59,7 @@ async function handleSignup() {
   const password = document.getElementById('signup-password').value;
   const name = document.getElementById('signup-name').value.trim();
   const errorEl = document.getElementById('signup-error');
+  errorEl.style.color = '';
 
   if (!email || !password || !name || !selectedRole) {
     errorEl.textContent = 'Please fill in all fields and select a role.';
@@ -98,6 +120,7 @@ async function handleLogin(emailOverride, passwordOverride) {
   const email = emailOverride || document.getElementById('login-email').value.trim();
   const password = passwordOverride || document.getElementById('login-password').value;
   const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.style.color = '';
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -111,24 +134,93 @@ async function handleLogin(emailOverride, passwordOverride) {
 
 // Load Profile & Route //
 async function loadProfile(userId) {
+  const errBanner = document.getElementById('auth-profile-error');
+  if (errBanner) errBanner.classList.add('hidden');
+
   const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
   if (error || !data) {
     console.error('Profile not found:', error);
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    if (errBanner) errBanner.classList.remove('hidden');
     return;
   }
   currentProfile = data;
   routeToApp(data.role);
 }
 
+async function handleAuthProfileErrorSignOut() {
+  await supabase.auth.signOut();
+  currentUser = null;
+  currentProfile = null;
+  location.reload();
+}
+
+function openPrivacyModal() {
+  const m = document.getElementById('privacy-modal');
+  if (!m) return;
+  m.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePrivacyModal() {
+  const m = document.getElementById('privacy-modal');
+  if (!m) return;
+  m.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function bindTablistKeyboard(rootSelector) {
+  const root = document.querySelector(rootSelector);
+  if (!root) return;
+  const tablist = root.querySelector('[role="tablist"]');
+  if (!tablist) return;
+  tablist.addEventListener('keydown', (e) => {
+    const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+    if (!tabs.length) return;
+    let idx = tabs.indexOf(document.activeElement);
+    if (idx < 0) {
+      idx = tabs.findIndex(t => t.getAttribute('aria-current') === 'true');
+      if (idx < 0) return;
+    }
+    let next = idx;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      next = (idx + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      next = (idx - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      next = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    tabs[next].focus();
+    tabs[next].click();
+  });
+}
+
 // Route to correct dashboard //
 function routeToApp(role) {
+  document.getElementById('auth-profile-error')?.classList.add('hidden');
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+
+  ['student-app', 'parent-app', 'counselor-app'].forEach((id) => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
 
   if (role === 'student') {
     document.getElementById('student-app').classList.remove('hidden');
     document.getElementById('student-welcome').textContent = `Welcome, ${currentProfile.name} 👋`;
-    document.getElementById('student-code-display').textContent = `Your Code: ${currentProfile.student_code}`;
+    const codeEl = document.getElementById('student-code-display');
+    const code = currentProfile.student_code;
+    codeEl.textContent = code ? `Your Code: ${code}` : '';
+    codeEl.classList.toggle('hidden', !code);
     initStudentApp();
   } else if (role === 'parent') {
     document.getElementById('parent-app').classList.remove('hidden');
@@ -143,17 +235,94 @@ function routeToApp(role) {
 
 // Sign Out //
 async function signOut() {
+  intentionalSignOut = true;
   await supabase.auth.signOut();
   currentUser = null;
   currentProfile = null;
   location.reload();
 }
 
+function showSessionExpiredModal() {
+  const m = document.getElementById('session-expired-modal');
+  if (!m) {
+    location.reload();
+    return;
+  }
+  m.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSessionExpiredModal() {
+  const m = document.getElementById('session-expired-modal');
+  if (!m) return;
+  m.classList.add('hidden');
+  document.body.style.overflow = '';
+  location.reload();
+}
+
+function initOfflineBanner() {
+  const el = document.getElementById('offline-banner');
+  if (!el) return;
+  const sync = () => {
+    el.classList.toggle('hidden', navigator.onLine);
+  };
+  window.addEventListener('online', sync);
+  window.addEventListener('offline', sync);
+  sync();
+}
+
+function registerHiveServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
 // Check session on load//
 window.addEventListener('DOMContentLoaded', async () => {
+  const pilot = document.getElementById('pilot-mail-link');
+  if (pilot && typeof PILOT_CONTACT_EMAIL !== 'undefined') {
+    pilot.href = `mailto:${PILOT_CONTACT_EMAIL}?subject=${encodeURIComponent('The Hive — school pilot interest')}`;
+  }
+
+  document.getElementById('privacy-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'privacy-modal') closePrivacyModal();
+  });
+
+  document.getElementById('session-expired-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'session-expired-modal') closeSessionExpiredModal();
+  });
+
+  document.getElementById('student-onboarding')?.addEventListener('click', (e) => {
+    if (e.target.id === 'student-onboarding' && typeof dismissStudentOnboarding === 'function') dismissStudentOnboarding();
+  });
+
+  document.getElementById('login-form')?.setAttribute('aria-hidden', 'false');
+  document.getElementById('signup-form')?.setAttribute('aria-hidden', 'true');
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    closePrivacyModal();
+    if (typeof dismissStudentOnboarding === 'function') {
+      const ob = document.getElementById('student-onboarding');
+      if (ob && !ob.classList.contains('hidden')) dismissStudentOnboarding();
+    }
+  });
+
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
     currentUser = session.user;
     await loadProfile(currentUser.id);
   }
+
+  initOfflineBanner();
+  registerHiveServiceWorker();
+
+  supabase.auth.onAuthStateChange((event, sess) => {
+    if (event !== 'SIGNED_OUT' || sess) return;
+    if (intentionalSignOut) return;
+    const app = document.getElementById('app');
+    const authScreen = document.getElementById('auth-screen');
+    if (app && !app.classList.contains('hidden') && authScreen && authScreen.classList.contains('hidden')) {
+      showSessionExpiredModal();
+    }
+  });
 });

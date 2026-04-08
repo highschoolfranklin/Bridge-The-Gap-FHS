@@ -5,104 +5,271 @@
 let allScholarships = [];
 let allOpportunities = [];
 
-const collegeHelpResources = [
-  { title: "California Student Aid Commission - Financial Aid Programs", url: "https://www.csac.ca.gov/financial-aid-programs" },
-  { title: "Federal Student Aid - Types of Aid", url: "https://studentaid.gov/understand-aid/types" },
-  { title: "Common App - First Year Students", url: "https://www.commonapp.org/apply/first-year-students" },
-  { title: "University of California - How to Apply", url: "https://admission.universityofcalifornia.edu/how-to-apply/" },
-  { title: "College Board - How to Begin College Applications", url: "https://bigfuture.collegeboard.org/plan-for-college/apply-to-college/college-applications-how-to-begin" },
-  { title: "U.S. News - College Application Process", url: "https://www.usnews.com/education/best-colleges/articles/college-application-process" },
-  { title: "Xello Resources - Guides ready to download", url: "https://help.xello.world/en-us/Content/Knowledge-Base/Xello-6-12/College-Planning/CA_Complete-Teacher-Eval.htm" },
-  { title: "Xello College Planning Resources", url: "https://help.xello.world/en-us/Content/Knowledge-Base/Xello-6-12/College-Planning/KB_6-12_College-Planning.htm" },
-  { title: "OnePrep: Your Ultimate SAT Site", url: "https://www.oneprep.xyz/" },
-  { title: "College Admissions Hacks: A Field Guide", url: "https://docs.google.com/document/d/1OxLEGNu_7_v1kcZp4KCX13YF_GFzaM6oLvneZuAa1Ck/edit" },
-  { title: "SAT + ACT Master Document!", url: "https://api.drived.space/uploads/drived/315/download/pdf/5a/k6/chchnk0ql.pdf" },
-  { title: "Khan Academy: SAT Prep", url: "https://www.khanacademy.org/test-prep/digital-sat" },
+/** Grouped for the College + SAT Help page (order = display order). */
+const collegeHelpCategories = [
+  {
+    label: 'Financial aid',
+    blurb: 'California and federal programs, grants, and loans.',
+    icon: '💵',
+    items: [
+      { title: 'California Student Aid Commission — Financial aid programs', url: 'https://www.csac.ca.gov/financial-aid-programs' },
+      { title: 'Federal Student Aid — Types of aid', url: 'https://studentaid.gov/understand-aid/types' },
+    ],
+  },
+  {
+    label: 'Applications & planning',
+    blurb: 'Where to apply and how the process works.',
+    icon: '📋',
+    items: [
+      { title: 'Common App — First-year students', url: 'https://www.commonapp.org/apply/first-year-students' },
+      { title: 'University of California — How to apply', url: 'https://admission.universityofcalifornia.edu/how-to-apply/' },
+      { title: 'College Board — How to begin college applications', url: 'https://bigfuture.collegeboard.org/plan-for-college/apply-to-college/college-applications-how-to-begin' },
+      { title: 'U.S. News — College application process', url: 'https://www.usnews.com/education/best-colleges/articles/college-application-process' },
+    ],
+  },
+  {
+    label: 'SAT & testing',
+    blurb: 'Practice and strategy for the digital SAT.',
+    icon: '📝',
+    items: [
+      { title: 'Khan Academy — Digital SAT prep', url: 'https://www.khanacademy.org/test-prep/digital-sat' },
+      { title: 'OnePrep — SAT practice hub', url: 'https://www.oneprep.xyz/' },
+      { title: 'SAT + ACT master document (PDF)', url: 'https://api.drived.space/uploads/drived/315/download/pdf/5a/k6/chchnk0ql.pdf' },
+    ],
+  },
+  {
+    label: 'Guides & tools',
+    blurb: 'Downloads, Xello help, and quick references.',
+    icon: '📎',
+    items: [
+      { title: 'Xello — Guides ready to download', url: 'https://help.xello.world/en-us/Content/Knowledge-Base/Xello-6-12/College-Planning/CA_Complete-Teacher-Eval.htm' },
+      { title: 'Xello — College planning resources', url: 'https://help.xello.world/en-us/Content/Knowledge-Base/Xello-6-12/College-Planning/KB_6-12_College-Planning.htm' },
+      { title: 'College admissions hacks — Field guide (Google Doc)', url: 'https://docs.google.com/document/d/1OxLEGNu_7_v1kcZp4KCX13YF_GFzaM6oLvneZuAa1Ck/edit' },
+    ],
+  },
 ];
 
 function initStudentApp() {
   const buttons = document.querySelectorAll('#student-app .tab-btn');
+
+  const loadTab = (tab) => {
+    if (typeof trackTabView === 'function') trackTabView('student', tab);
+    const content = document.getElementById('content');
+    if (tab === 'opportunities') {
+      renderOpportunities();
+      return;
+    }
+    if (tab === 'scholarships') {
+      renderScholarships();
+      return;
+    }
+    content.innerHTML = loadingMarkup('Loading…');
+    switch (tab) {
+      case 'college': renderCollegeHelp(); break;
+      case 'progress': renderProgress(); break;
+      case 'sat': renderSATTracker(); break;
+      case 'colleges': renderCollegeResearch(); break;
+      case 'todo': renderTodoList(); break;
+    }
+  };
+
+  const activateTab = (tab, { skipHash } = {}) => {
+    buttons.forEach(b => {
+      b.classList.remove('active');
+      b.removeAttribute('aria-current');
+    });
+    const el = document.querySelector(`#student-app [data-tab="${tab}"]`);
+    if (el) {
+      el.classList.add('active');
+      el.setAttribute('aria-current', 'true');
+    }
+    if (!skipHash) setAppHash('student', tab);
+    loadTab(tab);
+  };
+
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadStudentSection(btn.dataset.tab);
+      const tab = btn.dataset.tab;
+      if (document.querySelector('#student-app .tab-btn.active')?.dataset.tab === tab) return;
+      activateTab(tab);
     });
   });
-  loadStudentSection('college');
-  document.querySelector('[data-tab="college"]').classList.add('active');
+
+  window.addEventListener('hashchange', () => {
+    const h = getAppHash();
+    if (!h || h.role !== 'student' || !APP_TABS.student.has(h.tab)) return;
+    const cur = document.querySelector('#student-app .tab-btn.active');
+    if (cur && cur.dataset.tab === h.tab) return;
+    activateTab(h.tab, { skipHash: true });
+  });
+
+  const startTab = resolveStartTab('student', 'college');
+  const expectedHash = `#student/${encodeURIComponent(startTab)}`;
+  activateTab(startTab, { skipHash: location.hash === expectedHash });
+
   checkScholarshipDeadlines();
+  maybeShowStudentOnboarding();
+  bindTablistKeyboard('#student-app');
 }
 
-function loadStudentSection(type) {
-  const content = document.getElementById('content');
-  content.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p>Loading...</p></div>';
+const HIVE_CACHE_OPPORTUNITIES = 'hive-cache-opportunities-v1';
+const HIVE_CACHE_SCHOLARSHIPS = 'hive-cache-scholarships-v1';
 
-  switch(type) {
-    case 'college': renderCollegeHelp(); break;
-    case 'opportunities': renderOpportunities(); break;
-    case 'scholarships': renderScholarships(); break;
-    case 'progress': renderProgress(); break;
-    case 'sat': renderSATTracker(); break;
-    case 'colleges': renderCollegeResearch(); break;
-    case 'todo': renderTodoList(); break;
+function formatCachedTime(ts) {
+  if (ts == null) return '';
+  try {
+    return new Date(ts).toLocaleString();
+  } catch {
+    return '';
   }
+}
+
+function listingErrorInner(label, retryId) {
+  return `<div class="listing-error" role="alert">
+    <p class="listing-error-title">Couldn't load ${escapeHtml(label)}.</p>
+    <p class="listing-error-detail">Check your connection and try again.</p>
+    <button type="button" class="auth-btn listing-retry-btn" id="${retryId}">Retry</button>
+  </div>`;
 }
 
 // COLLEGE HELP //
 function renderCollegeHelp() {
   const content = document.getElementById('content');
-  const cards = collegeHelpResources.map(r => `
-    <div class="resource-card">
-      <div class="card-info">
-        <h3>${r.title}</h3>
-        <a href="${r.url}" target="_blank">Visit Resource</a>
+  const buzzUrl = safeHttpUrl('https://fhsbuzz.com/');
+
+  const categoryBlocks = collegeHelpCategories.map(
+    (cat, catIndex) => `
+    <section class="college-help-category" aria-labelledby="ch-cat-${catIndex}">
+      <div class="college-help-category-head">
+        <span class="college-help-category-icon" aria-hidden="true">${cat.icon}</span>
+        <div>
+          <h3 class="college-help-category-title" id="ch-cat-${catIndex}">${escapeHtml(cat.label)}</h3>
+          <p class="college-help-category-blurb">${escapeHtml(cat.blurb)}</p>
+        </div>
       </div>
-    </div>
-  `).join('');
+      <ul class="college-help-link-list">
+        ${cat.items
+          .map((r) => {
+            const href = safeHttpUrl(r.url);
+            if (!href) return '';
+            return `<li>
+              <a class="college-help-link" href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">
+                <span class="college-help-link-text">${escapeHtml(r.title)}</span>
+                <span class="college-help-link-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>`;
+          })
+          .join('')}
+      </ul>
+    </section>
+  `
+  ).join('');
 
   content.innerHTML = `
-    <div class="resource-card">
-      <div class="card-info">
-        <h3>Franklin High School Newspaper</h3>
-        <p>Visit our school newspaper for the latest news, college help, and guides! (coming soon)</p>
-        <a href="https://fhsbuzz.com/" target="_blank">Visit FHS Buzz</a>
-      </div>
+    <div class="section-header college-help-header">
+      <h2 class="section-title">College &amp; SAT help</h2>
+      <p class="section-desc">Curated links for financial aid, applications, testing, and planning—plus our school paper.</p>
     </div>
-    ${cards}
+
+    <article class="college-help-spotlight">
+      <div class="college-help-spotlight-visual" aria-hidden="true">
+        <span class="college-help-spotlight-badge">Franklin</span>
+        <span class="college-help-spotlight-emoji">📰</span>
+      </div>
+      <div class="college-help-spotlight-body">
+        <h3 class="college-help-spotlight-title">FHS Buzz — student newspaper</h3>
+        <p class="college-help-spotlight-desc">News, college tips, and guides from Franklin students. Check the site for the latest stories.</p>
+        ${buzzUrl ? `<a class="college-help-spotlight-cta" href="${escapeAttr(buzzUrl)}" target="_blank" rel="noopener noreferrer">Open FHS Buzz</a>` : ''}
+      </div>
+    </article>
+
+    <div class="college-help-grid">
+      ${categoryBlocks}
+    </div>
   `;
 }
 
 // OPPORTUNITIES //
-function renderOpportunities() {
-  fetch(RESOURCES_URL)
-    .then(r => r.json())
-    .then(data => {
-      allOpportunities = data || [];
-      const content = document.getElementById('content');
-      content.innerHTML = `
-        <div class="search-container">
-          <input type="text" id="opp-search" class="search-input" placeholder="Search opportunities by name or category..." />
+function opportunitiesListingShellHtml() {
+  const updated = formatDataListUpdated(typeof OPPORTUNITIES_LIST_UPDATED !== 'undefined' ? OPPORTUNITIES_LIST_UPDATED : '');
+  return `
+    <div class="listing-page">
+      <div class="section-header listing-page-header">
+        <h2 class="section-title">Opportunities</h2>
+        <p class="section-desc">Programs, internships, and events from the school list. Search, open details, and track what you pursue.</p>
+      </div>
+      <div id="opp-stale-banner" class="listing-stale-banner hidden" role="status"></div>
+      <div class="listing-toolbar">
+        <p class="data-freshness-banner listing-freshness" role="status">List last updated: <strong>${updated}</strong>. Staff maintain this sheet—refresh after updates.</p>
+        <div class="listing-search">
+          <label class="sr-only" for="opp-search">Search opportunities</label>
+          <input type="search" id="opp-search" class="search-input listing-search-input" placeholder="Search by name or category…" autocomplete="off" />
         </div>
-        <div id="opp-results"></div>
-      `;
-      renderOppCards(allOpportunities);
-      document.getElementById('opp-search').addEventListener('input', e => {
-        const q = e.target.value.toLowerCase();
-        renderOppCards(allOpportunities.filter(i => {
-          const n = normalizeItem(i);
-          return (getName(n) + getCategory(n)).toLowerCase().includes(q);
-        }));
-      });
-    }).catch(() => {
-      document.getElementById('content').innerHTML = '<p class="error-msg">Error loading opportunities.</p>';
+      </div>
+      <div id="opp-results" class="listing-results listing-results--skeleton">${skeletonListingMarkup(6)}</div>
+    </div>`;
+}
+
+function renderOpportunities() {
+  const content = document.getElementById('content');
+  content.innerHTML = opportunitiesListingShellHtml();
+  loadOpportunitiesData();
+}
+
+async function loadOpportunitiesData() {
+  const resultsEl = document.getElementById('opp-results');
+  const staleEl = document.getElementById('opp-stale-banner');
+  if (!resultsEl) return;
+
+  const result = await fetchJsonWithCache(RESOURCES_URL, HIVE_CACHE_OPPORTUNITIES);
+
+  if (!result.ok) {
+    resultsEl.innerHTML = listingErrorInner('opportunities', 'opp-retry-btn');
+    document.getElementById('opp-retry-btn')?.addEventListener('click', () => {
+      resultsEl.classList.add('listing-results--skeleton');
+      resultsEl.innerHTML = skeletonListingMarkup(6);
+      loadOpportunitiesData();
     });
+    if (staleEl) staleEl.classList.add('hidden');
+    return;
+  }
+
+  allOpportunities = result.data || [];
+
+  if (staleEl) {
+    if (result.stale && result.cachedAt) {
+      staleEl.classList.remove('hidden');
+      staleEl.innerHTML = `Showing a saved copy from <strong>${escapeHtml(formatCachedTime(result.cachedAt))}</strong> because the list couldn’t refresh.`;
+    } else {
+      staleEl.classList.add('hidden');
+      staleEl.innerHTML = '';
+    }
+  }
+
+  resultsEl.classList.remove('listing-results--skeleton');
+  renderOppCards(allOpportunities);
+
+  const search = document.getElementById('opp-search');
+  if (search && !search._oppSearchBound) {
+    search._oppSearchBound = true;
+    const run = debounce(() => {
+      const q = (document.getElementById('opp-search')?.value || '').toLowerCase();
+      renderOppCards(allOpportunities.filter(i => {
+        const n = normalizeItem(i);
+        return (getName(n) + getCategory(n)).toLowerCase().includes(q);
+      }));
+    }, 220);
+    search.addEventListener('input', run);
+  }
 }
 
 function renderOppCards(items) {
   const div = document.getElementById('opp-results');
   if (!div) return;
-  if (!items.length) { div.innerHTML = '<p>No opportunities match your search.</p>'; return; }
+  if (!items.length) {
+    div.innerHTML = '<p class="listing-empty" role="status">No opportunities match your search.</p>';
+    return;
+  }
   div.innerHTML = items.map((item, i) => {
     const n = normalizeItem(item);
     const name = getName(n);
@@ -111,53 +278,107 @@ function renderOppCards(items) {
     const deadline = getDeadline(n);
     const category = getCategory(n);
     const link = getLink(n);
+    const safeLink = safeHttpUrl(link);
+    const title = escapeHtml(name || `Opportunity #${i + 1}`);
+    const chips = [
+      category ? `<span class="data-card-chip">${escapeHtml(category)}</span>` : '',
+      status ? `<span class="data-card-chip data-card-chip--muted">${escapeHtml(status)}</span>` : '',
+      deadline ? `<span class="data-card-chip data-card-chip--date"><span aria-hidden="true">📅</span> ${escapeHtml(deadline)}</span>` : '',
+    ].filter(Boolean).join('');
     return `
-      <div class="resource-card">
-        <div class="card-info">
-          <h3>${name || `Opportunity #${i+1}`}</h3>
-          ${notes ? `<p>${notes}</p>` : ''}
-          <ul>
-            ${status ? `<li><strong>Status:</strong> ${status}</li>` : ''}
-            ${category ? `<li><strong>Category:</strong> ${category}</li>` : ''}
-            ${deadline ? `<li><strong>Date:</strong> ${deadline}</li>` : ''}
-          </ul>
-          <div class="card-actions">
-            ${link ? `<a href="${link}" target="_blank">Apply / Visit</a>` : ''}
-            <button class="track-btn" onclick="addToProgress('opportunity', '${name.replace(/'/g,"\\'")}', '${deadline}', '${link}')">+ Track This</button>
+      <article class="data-card data-card--opp">
+        <div class="data-card-body">
+          <h3 class="data-card-title">${title}</h3>
+          ${chips ? `<div class="data-card-chips">${chips}</div>` : ''}
+          ${notes ? `<p class="data-card-text">${escapeHtml(notes)}</p>` : ''}
+          <div class="data-card-actions">
+            ${safeLink ? `<a class="data-card-btn data-card-btn--primary" href="${escapeAttr(safeLink)}" target="_blank" rel="noopener noreferrer">Apply / visit</a>` : ''}
+            <button type="button" class="data-card-btn data-card-btn--track" onclick='addToProgress("opportunity", ${JSON.stringify(name)}, ${JSON.stringify(deadline)}, ${JSON.stringify(link)}, this)'>+ Track</button>
           </div>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 }
 
 // SCHOLARSHIPS //
-function renderScholarships() {
-  fetch(SCHOLARSHIPS_URL)
-    .then(r => r.json())
-    .then(data => {
-      allScholarships = data || [];
-      const content = document.getElementById('content');
-      content.innerHTML = `
-        <div class="search-container">
-          <input type="text" id="sch-search" class="search-input" placeholder="Search scholarships by name..." />
+function scholarshipsListingShellHtml() {
+  const updated = formatDataListUpdated(typeof SCHOLARSHIPS_LIST_UPDATED !== 'undefined' ? SCHOLARSHIPS_LIST_UPDATED : '');
+  return `
+    <div class="listing-page">
+      <div class="section-header listing-page-header">
+        <h2 class="section-title">Scholarships</h2>
+        <p class="section-desc">Awards and aid opportunities from the school list. Search by name, read the details, and track deadlines in My Progress.</p>
+      </div>
+      <div id="sch-stale-banner" class="listing-stale-banner hidden" role="status"></div>
+      <div class="listing-toolbar">
+        <p class="data-freshness-banner listing-freshness" role="status">List last updated: <strong>${updated}</strong>. Staff maintain this sheet—refresh after updates.</p>
+        <div class="listing-search">
+          <label class="sr-only" for="sch-search">Search scholarships</label>
+          <input type="search" id="sch-search" class="search-input listing-search-input" placeholder="Search by scholarship name…" autocomplete="off" />
         </div>
-        <div id="sch-results"></div>
-      `;
-      renderSchCards(allScholarships);
-      document.getElementById('sch-search').addEventListener('input', e => {
-        const q = e.target.value.toLowerCase();
-        renderSchCards(allScholarships.filter(i => getTitle(normalizeItem(i)).toLowerCase().includes(q)));
-      });
-    }).catch(() => {
-      document.getElementById('content').innerHTML = '<p class="error-msg">Error loading scholarships.</p>';
+      </div>
+      <div id="sch-results" class="listing-results listing-results--skeleton">${skeletonListingMarkup(6)}</div>
+    </div>`;
+}
+
+function renderScholarships() {
+  const content = document.getElementById('content');
+  content.innerHTML = scholarshipsListingShellHtml();
+  loadScholarshipsData();
+}
+
+async function loadScholarshipsData() {
+  const resultsEl = document.getElementById('sch-results');
+  const staleEl = document.getElementById('sch-stale-banner');
+  if (!resultsEl) return;
+
+  const result = await fetchJsonWithCache(SCHOLARSHIPS_URL, HIVE_CACHE_SCHOLARSHIPS);
+
+  if (!result.ok) {
+    resultsEl.innerHTML = listingErrorInner('scholarships', 'sch-retry-btn');
+    document.getElementById('sch-retry-btn')?.addEventListener('click', () => {
+      resultsEl.classList.add('listing-results--skeleton');
+      resultsEl.innerHTML = skeletonListingMarkup(6);
+      loadScholarshipsData();
     });
+    if (staleEl) staleEl.classList.add('hidden');
+    return;
+  }
+
+  allScholarships = result.data || [];
+
+  if (staleEl) {
+    if (result.stale && result.cachedAt) {
+      staleEl.classList.remove('hidden');
+      staleEl.innerHTML = `Showing a saved copy from <strong>${escapeHtml(formatCachedTime(result.cachedAt))}</strong> because the list couldn’t refresh.`;
+    } else {
+      staleEl.classList.add('hidden');
+      staleEl.innerHTML = '';
+    }
+  }
+
+  resultsEl.classList.remove('listing-results--skeleton');
+  renderSchCards(allScholarships);
+
+  const search = document.getElementById('sch-search');
+  if (search && !search._schSearchBound) {
+    search._schSearchBound = true;
+    const run = debounce(() => {
+      const q = (document.getElementById('sch-search')?.value || '').toLowerCase();
+      renderSchCards(allScholarships.filter(i => getTitle(normalizeItem(i)).toLowerCase().includes(q)));
+    }, 220);
+    search.addEventListener('input', run);
+  }
 }
 
 function renderSchCards(items) {
   const div = document.getElementById('sch-results');
   if (!div) return;
-  if (!items.length) { div.innerHTML = '<p>No scholarships match your search.</p>'; return; }
+  if (!items.length) {
+    div.innerHTML = '<p class="listing-empty" role="status">No scholarships match your search.</p>';
+    return;
+  }
   div.innerHTML = items.map(item => {
     const n = normalizeItem(item);
     const title = getTitle(n);
@@ -169,31 +390,40 @@ function renderSchCards(items) {
     const grade = n.Grade || n.grade || n['Grade Level'] || '';
     const emoji = n.Emoji || n.emoji || '';
     const image = n.Image || n.image || '';
+    const safeImg = safeHttpUrl(image);
+    const safeLink = safeHttpUrl(link);
+    const titleEsc = escapeHtml(title);
+    const titleAttr = escapeAttr(title);
+    const chips = [
+      area ? `<span class="data-card-chip">${escapeHtml(area)}</span>` : '',
+      grade ? `<span class="data-card-chip data-card-chip--muted">${escapeHtml(grade)}</span>` : '',
+      status ? `<span class="data-card-chip data-card-chip--muted">${escapeHtml(status)}</span>` : '',
+      deadline ? `<span class="data-card-chip data-card-chip--date"><span aria-hidden="true">📅</span> ${escapeHtml(deadline)}</span>` : '',
+    ].filter(Boolean).join('');
+    const cover = safeImg
+      ? `<div class="data-card-cover"><img class="data-card-cover-img" src="${escapeAttr(safeImg)}" alt="${titleAttr}" loading="lazy" decoding="async" onerror="this.closest('.data-card-cover').style.display='none'"/></div>`
+      : (emoji
+        ? `<div class="data-card-cover data-card-cover--emoji" aria-hidden="true"><span class="data-card-cover-icon">${escapeHtml(emoji)}</span></div>`
+        : '');
     return `
-      <div class="resource-card">
-        ${image ? `<img class="resource-image" src="${image}" alt="${title}" onerror="this.style.display='none'"/>` : ''}
-        <div class="card-emoji">${emoji}</div>
-        <div class="card-info">
-          <h3>${title}</h3>
-          ${desc ? `<p>${desc}</p>` : ''}
-          <ul>
-            ${status ? `<li><strong>Status:</strong> ${status}</li>` : ''}
-            ${area ? `<li><strong>Area:</strong> ${area}</li>` : ''}
-            ${grade ? `<li><strong>Grade Level:</strong> ${grade}</li>` : ''}
-            ${deadline ? `<li><strong>Deadline:</strong> ${deadline}</li>` : ''}
-          </ul>
-          <div class="card-actions">
-            ${link ? `<a href="${link}" target="_blank">Apply / Visit</a>` : ''}
-            <button class="track-btn" onclick="addToProgress('scholarship', '${title.replace(/'/g,"\\'")}', '${deadline}', '${link}')">+ Track This</button>
+      <article class="data-card data-card--sch">
+        ${cover}
+        <div class="data-card-body">
+          <h3 class="data-card-title">${titleEsc}</h3>
+          ${chips ? `<div class="data-card-chips">${chips}</div>` : ''}
+          ${desc ? `<p class="data-card-text">${escapeHtml(desc)}</p>` : ''}
+          <div class="data-card-actions">
+            ${safeLink ? `<a class="data-card-btn data-card-btn--primary" href="${escapeAttr(safeLink)}" target="_blank" rel="noopener noreferrer">Apply / visit</a>` : ''}
+            <button type="button" class="data-card-btn data-card-btn--track" onclick='addToProgress("scholarship", ${JSON.stringify(title)}, ${JSON.stringify(deadline)}, ${JSON.stringify(link)}, this)'>+ Track</button>
           </div>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 }
 
 // ADD TO PROGRESS //
-async function addToProgress(type, title, deadline, link) {
+async function addToProgress(type, title, deadline, link, btn) {
   const { error } = await supabase.from('progress').insert([{
     student_id: currentUser.id,
     type,
@@ -205,6 +435,17 @@ async function addToProgress(type, title, deadline, link) {
   }]);
   if (!error) {
     showToast(`"${title}" added to your Progress tracker! 🎯`);
+    if (btn && btn instanceof HTMLElement) {
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Added ✓';
+      btn.classList.add('data-card-btn--done');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.disabled = false;
+        btn.classList.remove('data-card-btn--done');
+      }, 2200);
+    }
   } else {
     showToast('Error adding to progress. Try again.', true);
   }
@@ -247,30 +488,33 @@ async function renderProgress() {
       </div>
     ` : `
       <div class="progress-grid">
-        ${items.map(item => `
+        ${items.map(item => {
+          const plink = safeHttpUrl(item.link);
+          return `
           <div class="progress-card" style="border-left: 5px solid ${statusColors[item.status] || '#94a3b8'}">
             <div class="progress-card-header">
-              <span class="progress-type-badge">${item.type === 'scholarship' ? '💰' : '🌟'} ${item.type}</span>
-              <button class="delete-btn" onclick="deleteProgress('${item.id}')">✕</button>
+              <span class="progress-type-badge">${item.type === 'scholarship' ? '💰' : '🌟'} ${escapeHtml(item.type || '')}</span>
+              <button type="button" class="delete-btn" onclick="deleteProgress('${escapeAttr(item.id)}')">✕</button>
             </div>
-            <h3>${item.title}</h3>
-            ${item.deadline ? `<p class="deadline-text">📅 Deadline: ${item.deadline}</p>` : ''}
+            <h3>${escapeHtml(item.title)}</h3>
+            ${item.deadline ? `<p class="deadline-text">📅 Deadline: ${escapeHtml(item.deadline)}</p>` : ''}
             <div class="status-update">
               <label>Status:</label>
-              <select class="status-select" onchange="updateProgressStatus('${item.id}', this.value)">
-                ${Object.entries(statusLabels).map(([val, label]) => 
-                  `<option value="${val}" ${item.status === val ? 'selected' : ''}>${label}</option>`
+              <select class="status-select" onchange="updateProgressStatus('${escapeAttr(item.id)}', this.value)">
+                ${Object.entries(statusLabels).map(([val, label]) =>
+                  `<option value="${escapeAttr(val)}" ${item.status === val ? 'selected' : ''}>${label}</option>`
                 ).join('')}
               </select>
             </div>
             <div class="reminder-row">
               <label>Set Reminder:</label>
-              <input type="date" class="reminder-date-input" value="${item.reminder_date || ''}" 
-                onchange="setProgressReminder('${item.id}', this.value)" />
+              <input type="date" class="reminder-date-input" value="${escapeAttr(item.reminder_date || '')}"
+                onchange="setProgressReminder('${escapeAttr(item.id)}', this.value)" />
             </div>
-            ${item.link ? `<a href="${item.link}" target="_blank" class="progress-link">View Scholarship →</a>` : ''}
+            ${plink ? `<a href="${escapeAttr(plink)}" target="_blank" rel="noopener noreferrer" class="progress-link">${item.type === 'opportunity' ? 'View opportunity →' : 'View scholarship →'}</a>` : ''}
           </div>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
     `}
   `;
@@ -329,7 +573,7 @@ async function renderSATTracker() {
       <!-- Countdown Card -->
       <div class="sat-card countdown-card">
         <h3>📅 My SAT Date</h3>
-        <input type="date" id="sat-date-input" class="auth-input" value="${sat.sat_date || ''}" />
+        <input type="date" id="sat-date-input" class="auth-input" value="${escapeAttr(sat.sat_date || '')}" />
         <button class="save-btn" onclick="saveSATDate()">Save Date</button>
         ${sat.sat_date && diff > 0 ? `
           <div class="countdown-display">
@@ -356,9 +600,9 @@ async function renderSATTracker() {
       <!-- Goal Score Card -->
       <div class="sat-card">
         <h3>🎯 Score Goal</h3>
-        <input type="number" id="sat-goal" class="auth-input" placeholder="e.g. 1400" value="${sat.goal_score || ''}" min="400" max="1600" />
+        <input type="number" id="sat-goal" class="auth-input" placeholder="e.g. 1400" value="${escapeAttr(sat.goal_score != null && sat.goal_score !== '' ? String(sat.goal_score) : '')}" min="400" max="1600" />
         <button class="save-btn" onclick="saveSATGoal()">Save Goal</button>
-        ${sat.goal_score ? `<p class="goal-display">Goal: <strong>${sat.goal_score}</strong> / 1600</p>` : ''}
+        ${sat.goal_score != null && sat.goal_score !== '' ? `<p class="goal-display">Goal: <strong>${escapeHtml(String(sat.goal_score))}</strong> / 1600</p>` : ''}
       </div>
 
       <!-- Email Reminders Card -->
@@ -371,7 +615,7 @@ async function renderSATTracker() {
           <option value="weekly" ${sat.reminder_freq === 'weekly' ? 'selected' : ''}>Weekly</option>
           <option value="none" ${sat.reminder_freq === 'none' ? 'selected' : ''}>No reminders</option>
         </select>
-        <input type="date" id="reminder-start" class="auth-input" placeholder="Start date" value="${sat.reminder_start || ''}" style="margin-top:0.5rem"/>
+        <input type="date" id="reminder-start" class="auth-input" placeholder="Start date" value="${escapeAttr(sat.reminder_start || '')}" style="margin-top:0.5rem"/>
         <button class="save-btn" onclick="saveSATReminder()">Set Reminder</button>
       </div>
     </div>
@@ -392,10 +636,10 @@ async function renderSATTracker() {
         <div class="score-history">
           ${scoreList.map(s => `
             <div class="score-entry">
-              <span class="score-val">${s.score}</span>
-              <span class="score-date-label">${new Date(s.test_date || s.created_at).toLocaleDateString()}</span>
+              <span class="score-val">${escapeHtml(String(s.score))}</span>
+              <span class="score-date-label">${escapeHtml(new Date(s.test_date || s.created_at).toLocaleDateString())}</span>
               <span class="score-delta ${s.score >= (sat.goal_score || 1600) ? 'goal-met' : ''}">
-                ${s.score >= (sat.goal_score || 1600) ? '🎯 Goal Met!' : `${sat.goal_score ? sat.goal_score - s.score + ' pts to goal' : ''}`}
+                ${s.score >= (sat.goal_score || 1600) ? '🎯 Goal Met!' : `${sat.goal_score ? escapeHtml(String(sat.goal_score - s.score)) + ' pts to goal' : ''}`}
               </span>
             </div>
           `).join('')}
@@ -509,10 +753,16 @@ async function renderCollegeResearch() {
     .select('*').eq('student_id', currentUser.id).order('rank', { ascending: true });
 
   const list = colleges || [];
+  const enriched = await Promise.all(
+    list.map(async (c) => ({
+      ...c,
+      _logoDisplaySrc: c.logo_url ? await resolveCollegeLogoDisplayUrl(c.logo_url) : ''
+    }))
+  );
 
   content.innerHTML = `
     <div class="section-header">
-      <h2 class="section-title"> College Research</h2>
+      <h2 class="section-title">🏛️ College Research</h2>
       <p class="section-desc">Add colleges you're interested in, rank them, and take notes.</p>
     </div>
 
@@ -533,50 +783,122 @@ async function renderCollegeResearch() {
         </select>
         <input type="number" id="college-rank" class="auth-input" placeholder="Rank (1 = top choice)" min="1" style="width:180px" />
       </div>
+      <div class="field-group college-new-logo-field">
+        <label class="field-label" for="college-new-logo">University logo (optional)</label>
+        <input type="file" id="college-new-logo" class="file-input college-logo-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" />
+      </div>
       <button class="save-btn" onclick="addCollege()">Add College</button>
     </div>
 
     <div id="college-list">
-      ${list.length === 0 ? '<div class="empty-state"><div class="empty-icon">🏛️</div><h3>No colleges added yet!</h3><p>Add your first college above.</p></div>' : ''}
-      ${list.map(c => renderCollegeCard(c)).join('')}
+      ${enriched.length === 0 ? '<div class="empty-state"><div class="empty-icon">🏛️</div><h3>No colleges added yet!</h3><p>Add your first college above.</p></div>' : ''}
+      ${enriched.map(c => renderCollegeCard(c)).join('')}
     </div>
   `;
 }
 
 function renderCollegeCard(c) {
-  const interestLabels = {
-    very_interested: '⭐⭐⭐ Will Apply',
-    interested: '⭐⭐ Considering',
-    maybe: '⭐ Maybe',
-    not_interested: '❌ Not Interested'
-  };
+  const cid = escapeAttr(c.id);
+  const cidJs = JSON.stringify(c.id);
+  const imgSrc = (c._logoDisplaySrc && safeHttpUrl(c._logoDisplaySrc)) || safeHttpUrl(c.logo_url);
+  const rankVal = c.rank != null && c.rank !== '' ? String(c.rank) : '';
   return `
-    <div class="college-card">
-      <div class="college-card-header">
-        <div>
-          <h3>${c.name}</h3>
-          ${c.location ? `<p class="college-location">📍 ${c.location}</p>` : ''}
+    <div class="college-card college-card--with-logo">
+      <div class="college-card-top">
+        <div class="college-logo-cell" aria-hidden="true">
+          ${imgSrc
+    ? `<img class="college-logo-img" src="${escapeAttr(imgSrc)}" alt="" loading="lazy" decoding="async"/>`
+    : `<div class="college-logo-placeholder"><span aria-hidden="true">🏛️</span></div>`}
         </div>
-        <div class="college-card-actions">
-          ${c.rank ? `<span class="rank-badge">#${c.rank}</span>` : ''}
-          <button class="delete-btn" onclick="deleteCollege('${c.id}')">✕</button>
+        <div class="college-card-main">
+          <div class="college-card-header">
+            <div>
+              <h3>${escapeHtml(c.name)}</h3>
+              ${c.location ? `<p class="college-location">📍 ${escapeHtml(c.location)}</p>` : ''}
+            </div>
+            <div class="college-card-actions">
+              ${c.rank != null ? `<span class="rank-badge" id="rank-badge-${cid}">#${escapeHtml(String(c.rank))}</span>` : `<span class="rank-badge rank-badge--empty" id="rank-badge-${cid}">—</span>`}
+              <button type="button" class="delete-btn" onclick="deleteCollege(${cidJs})">✕</button>
+            </div>
+          </div>
+          <div class="college-rank-edit">
+            <label class="field-label" for="college-rank-input-${cid}">List rank</label>
+            <div class="college-rank-edit-row">
+              <input type="number" id="college-rank-input-${cid}" class="auth-input college-rank-input" min="1" step="1" placeholder="e.g. 1" value="${escapeAttr(rankVal)}" />
+              <button type="button" class="track-btn" onclick="saveCollegeRank(${cidJs})">Save rank</button>
+            </div>
+            <p class="college-rank-hint">Lower numbers appear first when sorted. Leave empty if not ranked yet.</p>
+          </div>
+          <div class="college-logo-upload">
+            <label class="field-label" for="college-logo-file-${cid}">Logo</label>
+            <div class="college-logo-upload-row">
+              <input type="file" id="college-logo-file-${cid}" class="file-input college-logo-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" />
+              <button type="button" class="save-btn" onclick="uploadCollegeLogo(${cidJs})">Upload</button>
+              ${safeHttpUrl(c.logo_url) ? `<button type="button" class="delete-btn" onclick="removeCollegeLogo(${cidJs})">Remove logo</button>` : ''}
+            </div>
+          </div>
+          ${c.notes ? `<div class="college-notes-display">${escapeHtml(c.notes)}</div>` : ''}
+          <div class="college-meta">
+            <select class="status-select" onchange="updateCollegeInterest(${cidJs}, this.value)">
+              <option value="">Set interest...</option>
+              <option value="very_interested" ${c.interest === 'very_interested' ? 'selected' : ''}>⭐⭐⭐ Will Apply</option>
+              <option value="interested" ${c.interest === 'interested' ? 'selected' : ''}>⭐⭐ Considering</option>
+              <option value="maybe" ${c.interest === 'maybe' ? 'selected' : ''}>⭐ Maybe</option>
+              <option value="not_interested" ${c.interest === 'not_interested' ? 'selected' : ''}>❌ Not Interested</option>
+            </select>
+            <span class="counselor-comment-area">
+              ${c.counselor_comment ? `<div class="counselor-note">💬 Counselor: ${escapeHtml(c.counselor_comment)}</div>` : ''}
+            </span>
+          </div>
         </div>
-      </div>
-      ${c.notes ? `<div class="college-notes-display">${c.notes}</div>` : ''}
-      <div class="college-meta">
-        <select class="status-select" onchange="updateCollegeInterest('${c.id}', this.value)">
-          <option value="">Set interest...</option>
-          <option value="very_interested" ${c.interest === 'very_interested' ? 'selected' : ''}>⭐⭐⭐ Will Apply</option>
-          <option value="interested" ${c.interest === 'interested' ? 'selected' : ''}>⭐⭐ Considering</option>
-          <option value="maybe" ${c.interest === 'maybe' ? 'selected' : ''}>⭐ Maybe</option>
-          <option value="not_interested" ${c.interest === 'not_interested' ? 'selected' : ''}>❌ Not Interested</option>
-        </select>
-        <span class="counselor-comment-area">
-          ${c.counselor_comment ? `<div class="counselor-note">💬 Counselor: ${c.counselor_comment}</div>` : ''}
-        </span>
       </div>
     </div>
   `;
+}
+
+async function uploadCollegeLogoFile(collegeId, file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('Please choose an image file (PNG, JPG, WebP, GIF, or SVG).', true);
+    return false;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Image must be 2 MB or smaller.', true);
+    return false;
+  }
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+  const path = `college-logos/${currentUser.id}/${collegeId}_${Date.now()}.${ext}`;
+  const contentType = file.type && file.type.startsWith('image/')
+    ? file.type
+    : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+  const { error: upErr } = await supabase.storage.from('documents').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType
+  });
+  if (upErr) {
+    console.error('College logo storage upload:', upErr);
+    const detail = upErr.message || String(upErr);
+    const rls = /row-level security|RLS|policy|violates/i.test(detail);
+    showToast(
+      rls
+        ? `Upload blocked by Storage rules: ${detail} (re-run supabase-storage-college-logos.sql in Supabase SQL Editor.)`
+        : `Upload failed: ${detail}`,
+      true
+    );
+    return false;
+  }
+  const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
+  const publicUrl = urlData?.publicUrl;
+  if (!publicUrl || !safeHttpUrl(publicUrl)) {
+    showToast('Could not get logo URL.', true);
+    return false;
+  }
+  const { error: dbErr } = await supabase.from('college_research').update({ logo_url: publicUrl }).eq('id', collegeId).eq('student_id', currentUser.id);
+  if (dbErr) {
+    showToast('Could not save logo URL.', true);
+    return false;
+  }
+  return true;
 }
 
 async function addCollege() {
@@ -585,12 +907,74 @@ async function addCollege() {
   const notes = document.getElementById('college-notes').value.trim();
   const interest = document.getElementById('college-interest').value;
   const rank = document.getElementById('college-rank').value;
+  const logoFile = document.getElementById('college-new-logo')?.files?.[0];
   if (!name) { showToast('Please enter a college name.', true); return; }
-  await supabase.from('college_research').insert([{
+  const { data: inserted, error } = await supabase.from('college_research').insert([{
     student_id: currentUser.id, name, location, notes, interest,
-    rank: rank ? parseInt(rank) : null, created_at: new Date().toISOString()
-  }]);
-  showToast(`${name} added! 🏛️`);
+    rank: rank ? parseInt(rank, 10) : null,
+    created_at: new Date().toISOString()
+  }]).select('id').single();
+  if (error) {
+    showToast('Could not add college. Try again.', true);
+    return;
+  }
+  if (logoFile && inserted?.id) {
+    const ok = await uploadCollegeLogoFile(inserted.id, logoFile);
+    if (ok) {
+      showToast(`${name} added with logo! 🏛️`);
+    } else {
+      showToast(`${name} added—you can upload a logo from the card.`, true);
+    }
+  } else {
+    showToast(`${name} added! 🏛️`);
+  }
+  renderCollegeResearch();
+}
+
+async function saveCollegeRank(collegeId) {
+  const input = document.getElementById(`college-rank-input-${collegeId}`);
+  const raw = input?.value?.trim() ?? '';
+  let rank = null;
+  if (raw !== '') {
+    const n = parseInt(raw, 10);
+    if (Number.isNaN(n) || n < 1) {
+      showToast('Rank must be a whole number 1 or higher.', true);
+      return;
+    }
+    rank = n;
+  }
+  const { error } = await supabase.from('college_research').update({ rank }).eq('id', collegeId).eq('student_id', currentUser.id);
+  if (error) {
+    showToast('Could not update rank.', true);
+    return;
+  }
+  showToast('Rank saved! ✅');
+  renderCollegeResearch();
+}
+
+async function uploadCollegeLogo(collegeId) {
+  const input = document.getElementById(`college-logo-file-${collegeId}`);
+  const file = input?.files?.[0];
+  if (!file) {
+    showToast('Choose an image first.', true);
+    return;
+  }
+  const ok = await uploadCollegeLogoFile(collegeId, file);
+  if (ok) {
+    showToast('Logo saved! 🏛️');
+    if (input) input.value = '';
+    renderCollegeResearch();
+  }
+}
+
+async function removeCollegeLogo(collegeId) {
+  if (!confirm('Remove this logo from your list?')) return;
+  const { error } = await supabase.from('college_research').update({ logo_url: null }).eq('id', collegeId).eq('student_id', currentUser.id);
+  if (error) {
+    showToast('Could not remove logo.', true);
+    return;
+  }
+  showToast('Logo removed.');
   renderCollegeResearch();
 }
 
@@ -660,7 +1044,7 @@ async function renderTodoList() {
     <!-- Counselor Notification -->
     <div class="counselor-notify card-form">
       <h3>📅 Request Counselor Meeting</h3>
-      <input type="text" id="counselor-email-notify" class="auth-input" placeholder="Counselor's Email" value="${profile?.counselor_email || ''}" />
+      <input type="text" id="counselor-email-notify" class="auth-input" placeholder="Counselor's Email" value="${escapeAttr(profile?.counselor_email || '')}" />
       <textarea id="meeting-message" class="auth-textarea" placeholder="What do you need help with?"></textarea>
       <button class="save-btn" onclick="notifyCounselor()">Send Meeting Request</button>
     </div>
@@ -670,13 +1054,13 @@ async function renderTodoList() {
       ${list.length === 0 ? '<div class="empty-state"><div class="empty-icon">✅</div><h3>No tasks yet!</h3><p>Add your first task above.</p></div>' : ''}
       ${list.map(t => `
         <div class="todo-item ${t.completed ? 'todo-done' : ''}">
-          <input type="checkbox" class="todo-check" ${t.completed ? 'checked' : ''} onchange="toggleTodo('${t.id}', this.checked)" />
+          <input type="checkbox" class="todo-check" ${t.completed ? 'checked' : ''} onchange="toggleTodo('${escapeAttr(t.id)}', this.checked)" />
           <div class="todo-content">
-            <span class="todo-title-text">${t.title}</span>
-            ${t.due_date ? `<span class="todo-due">📅 Due: ${t.due_date}</span>` : ''}
-            <span class="todo-type-badge">${t.type || 'general'}</span>
+            <span class="todo-title-text">${escapeHtml(t.title)}</span>
+            ${t.due_date ? `<span class="todo-due">📅 Due: ${escapeHtml(t.due_date)}</span>` : ''}
+            <span class="todo-type-badge">${escapeHtml(t.type || 'general')}</span>
           </div>
-          <button class="delete-btn" onclick="deleteTodo('${t.id}')">✕</button>
+          <button type="button" class="delete-btn" onclick="deleteTodo('${escapeAttr(t.id)}')">✕</button>
         </div>
       `).join('')}
     </div>
@@ -841,4 +1225,138 @@ function showToast(msg, isError = false) {
   document.body.appendChild(toast);
   setTimeout(() => toast.classList.add('toast-show'), 10);
   setTimeout(() => { toast.classList.remove('toast-show'); setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function formatDataListUpdated(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function maybeShowStudentOnboarding() {
+  if (!currentUser) return;
+  if (localStorage.getItem(`hive_onboarding_done_${currentUser.id}`)) return;
+  const m = document.getElementById('student-onboarding');
+  if (!m) return;
+  m.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function dismissStudentOnboarding() {
+  const m = document.getElementById('student-onboarding');
+  if (m) m.classList.add('hidden');
+  document.body.style.overflow = '';
+  if (currentUser) localStorage.setItem(`hive_onboarding_done_${currentUser.id}`, '1');
+}
+
+async function openStudentSummaryPrint(studentId, options) {
+  const opts = options || {};
+  let displayName = opts.studentName;
+  let displayEmail = opts.studentEmail;
+  if (!displayName || !displayEmail) {
+    const { data: prof } = await supabase.from('profiles').select('name, email').eq('id', studentId).single();
+    if (prof) {
+      displayName = displayName || prof.name;
+      displayEmail = displayEmail || prof.email;
+    }
+  }
+
+  const docTitle = opts.docTitle || 'Student summary';
+  const subtitle = opts.subtitle || '';
+
+  const [progressRes, satRes, scoresRes, collegesRes, todosRes] = await Promise.all([
+    supabase.from('progress').select('*').eq('student_id', studentId).order('created_at', { ascending: false }),
+    supabase.from('sat_tracker').select('*').eq('student_id', studentId).maybeSingle(),
+    supabase.from('sat_scores').select('*').eq('student_id', studentId).order('created_at', { ascending: false }),
+    supabase.from('college_research').select('*').eq('student_id', studentId).order('rank', { ascending: true }),
+    supabase.from('todos').select('*').eq('student_id', studentId).order('created_at', { ascending: false })
+  ]);
+
+  const progress = progressRes.data || [];
+  const sat = satRes.data || {};
+  const scores = scoresRes.data || [];
+  const colleges = collegesRes.data || [];
+  const todos = todosRes.data || [];
+
+  const statusLabels = {
+    not_started: 'Not started',
+    started: 'Started',
+    in_progress: 'In progress',
+    finished: 'Finished',
+    deadline_missed: 'Deadline missed'
+  };
+
+  const name = escapeHtml(displayName || 'Student');
+  const email = escapeHtml(displayEmail || '');
+  const generated = new Date().toLocaleString();
+
+  const progressRows = progress.length
+    ? progress.map(p => `<tr><td>${escapeHtml(p.title)}</td><td>${escapeHtml(p.type || '')}</td><td>${escapeHtml(statusLabels[p.status] || p.status || '')}</td><td>${escapeHtml(p.deadline || '—')}</td></tr>`).join('')
+    : '<tr><td colspan="4">No tracked items yet.</td></tr>';
+
+  const scoreRows = scores.length
+    ? scores.map(s => `<tr><td>${escapeHtml(String(s.score))}</td><td>${escapeHtml(new Date(s.test_date || s.created_at).toLocaleDateString())}</td></tr>`).join('')
+    : '<tr><td colspan="2">No practice scores logged.</td></tr>';
+
+  const collegeRows = colleges.length
+    ? colleges.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.location || '—')}</td><td>${escapeHtml(c.interest || '—')}</td><td>${escapeHtml(c.rank != null ? String(c.rank) : '—')}</td></tr>`).join('')
+    : '<tr><td colspan="4">No colleges added yet.</td></tr>';
+
+  const todoRows = todos.length
+    ? todos.map(t => `<tr><td>${escapeHtml(t.title)}</td><td>${t.completed ? 'Done' : 'Open'}</td><td>${escapeHtml(t.due_date || '—')}</td></tr>`).join('')
+    : '<tr><td colspan="3">No tasks yet.</td></tr>';
+
+  const subtitleHtml = subtitle ? `<p class="meta">${escapeHtml(subtitle)}</p>` : '';
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>${escapeHtml(docTitle)} — ${name}</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;padding:1.5rem;max-width:900px;margin:0 auto;color:#1a1a1a;line-height:1.5;}
+h1{color:#1e4a1e;font-size:1.35rem;} h2{font-size:1.05rem;margin-top:1.25rem;color:#2c632c;border-bottom:1px solid #e5e7eb;padding-bottom:0.25rem;}
+table{width:100%;border-collapse:collapse;font-size:0.88rem;margin-top:0.5rem;}
+th,td{border:1px solid #e5e7eb;padding:0.45rem 0.5rem;text-align:left;}
+th{background:#f0f4f0;}
+.meta{color:#666;font-size:0.9rem;margin-bottom:1rem;}
+@media print { body{padding:0.5rem;} h1{font-size:1.2rem;} }
+</style></head><body>
+<h1>${escapeHtml(docTitle)}</h1>
+${subtitleHtml}
+<p class="meta"><strong>Student:</strong> ${name}<br/><strong>Email:</strong> ${email}<br/><strong>Generated:</strong> ${escapeHtml(generated)}</p>
+
+<h2>SAT</h2>
+<p>Test date: ${escapeHtml(sat.sat_date || 'Not set')} · Goal score: ${sat.goal_score != null ? escapeHtml(String(sat.goal_score)) : 'Not set'} · Confidence: ${escapeHtml((sat.confidence || 'Not set').replace(/_/g, ' '))}</p>
+
+<h2>Tracked scholarships &amp; opportunities</h2>
+<table><thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Deadline</th></tr></thead><tbody>${progressRows}</tbody></table>
+
+<h2>College list</h2>
+<table><thead><tr><th>School</th><th>Location</th><th>Interest</th><th>Rank</th></tr></thead><tbody>${collegeRows}</tbody></table>
+
+<h2>Practice scores</h2>
+<table><thead><tr><th>Score</th><th>Date</th></tr></thead><tbody>${scoreRows}</tbody></table>
+
+<h2>To-do list</h2>
+<table><thead><tr><th>Task</th><th>Status</th><th>Due</th></tr></thead><tbody>${todoRows}</tbody></table>
+
+<p class="meta" style="margin-top:1.5rem;">Printed from The Hive — Franklin High School Resource Hub.</p>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) {
+    showToast('Allow pop-ups to print your summary.', true);
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { try { w.print(); } catch (e) {} }, 300);
+}
+
+async function printMeetingSummary() {
+  if (!currentUser || !currentProfile) return;
+  await openStudentSummaryPrint(currentUser.id, {
+    docTitle: 'Counselor meeting summary',
+    studentName: currentProfile.name,
+    studentEmail: currentProfile.email
+  });
 }

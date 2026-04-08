@@ -1,0 +1,20 @@
+{
+  "name": "The Hive — Franklin Resource Hub",
+  "short_name": "The Hive",
+  "description": "College prep hub for Franklin High School students, parents, and counselors.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#e8efe8",
+  "theme_color": "#153218",
+  "lang": "en-US",
+  "orientation": "portrait-primary",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

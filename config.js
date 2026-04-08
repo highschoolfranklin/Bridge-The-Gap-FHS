@@ -14,3 +14,10 @@ const SCHOLARSHIPS_SHEET_ID = "1sfVjLdfJOFRxypFi1rHpDDulk0525u0SQK89_-_b5OM";
 const RESOURCES_SHEET_ID = "1ZT0ZYqoTlE-NOYZVRPMtHxoubZm-1GrMUzj2w02CI0I";
 const SCHOLARSHIPS_URL = `https://opensheet.elk.sh/${SCHOLARSHIPS_SHEET_ID}/1`;
 const RESOURCES_URL = `https://opensheet.elk.sh/${RESOURCES_SHEET_ID}/1`;
+
+// Update when school staff change the Google Sheets (shown as “last updated” in the app).
+const SCHOLARSHIPS_LIST_UPDATED = '2026-04-07';
+const OPPORTUNITIES_LIST_UPDATED = '2026-04-07';
+
+// Pilot / partnership inquiries (mailto in landing section).
+const PILOT_CONTACT_EMAIL = 'highschoolfranklin9@gmail.com';

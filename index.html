@@ -3,7 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#153218" />
+    <meta name="description" content="The Hive — Franklin High School college prep hub for students, parents, and counselors." />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="The Hive — Franklin Resource Hub" />
+    <meta property="og:description" content="College prep tools for students, parents, and counselors at Franklin High School." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The Hive — Franklin Resource Hub" />
+    <meta name="twitter:description" content="College prep tools for students, parents, and counselors at Franklin High School." />
     <title>The Hive — Franklin Resource Hub</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
@@ -12,76 +24,132 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   </head>
   <body>
+    <div id="offline-banner" class="offline-banner hidden" role="status" aria-live="polite">You're offline. Lists and live data may not load until you're back online.</div>
+    <a href="#auth-card-start" class="skip-link">Skip to sign in</a>
 
     <!-- ======================== AUTH SCREEN ======================== -->
     <div id="auth-screen" class="auth-screen">
       <div class="auth-bg-honeycomb"></div>
-      <div class="auth-container">
+      <div class="auth-container auth-container-wide">
         <div class="auth-logo">
           <div class="auth-bee">🐝</div>
           <h1 class="auth-title">The Hive</h1>
           <p class="auth-subtitle">Franklin High School Resource Hub</p>
         </div>
 
+        <div id="auth-profile-error" class="auth-profile-error hidden" role="alert">
+          <p>We couldn’t load your account profile. Try signing in again, or contact your school if the problem continues.</p>
+          <button type="button" class="auth-btn auth-btn-secondary" onclick="handleAuthProfileErrorSignOut()">Sign out and try again</button>
+        </div>
+
+        <section class="landing-panel" aria-label="What The Hive offers">
+          <h2 class="landing-heading">One hub for college prep</h2>
+          <p class="landing-lead">Students, parents, and counselors stay aligned on scholarships, SAT goals, college lists, and tasks—not scattered links and spreadsheets.</p>
+          <ul class="landing-features" aria-label="Highlights">
+            <li><span class="landing-feature-icon" aria-hidden="true">💰</span> Scholarships &amp; deadlines</li>
+            <li><span class="landing-feature-icon" aria-hidden="true">📝</span> SAT tracking</li>
+            <li><span class="landing-feature-icon" aria-hidden="true">🏛️</span> College research</li>
+          </ul>
+          <ul class="landing-roles">
+            <li><strong>Students</strong> — Track deadlines, SAT progress, and college research in one workflow.</li>
+            <li><strong>Parents</strong> — Read-only visibility into your student’s progress using their share code.</li>
+            <li><strong>Counselors</strong> — Share resources, upload transcripts, and respond to meeting and LOR context.</li>
+          </ul>
+          <div class="landing-cta">
+            <a id="pilot-mail-link" class="landing-pilot-link" href="#">Request a school pilot</a>
+            <button type="button" class="landing-link-btn" onclick="openPrivacyModal()">Privacy &amp; data</button>
+          </div>
+        </section>
+
         <!-- Step 1: Login or Signup choice -->
         <div id="auth-step-1" class="auth-card">
-          <h2>Welcome Back</h2>
+          <h2 id="auth-card-start" tabindex="-1">Welcome Back</h2>
           <p class="auth-desc">Sign in or create your account to access The Hive.</p>
-          <div class="auth-tabs">
-            <button class="auth-tab" onclick="switchAuthTab('login', event)">Login</button>
-<button class="auth-tab" onclick="switchAuthTab('signup', event)">Sign Up</button>
+          <div class="auth-tabs" role="tablist" aria-label="Login or sign up">
+            <button type="button" class="auth-tab active" id="tab-login" role="tab" aria-selected="true" aria-controls="login-form" onclick="switchAuthTab('login', event)">Login</button>
+            <button type="button" class="auth-tab" id="tab-signup" role="tab" aria-selected="false" aria-controls="signup-form" onclick="switchAuthTab('signup', event)">Sign Up</button>
           </div>
 
           <!-- Login Form -->
-          <div id="login-form" class="auth-form">
-            <input type="email" id="login-email" class="auth-input" placeholder="School Email" />
-            <input type="password" id="login-password" class="auth-input" placeholder="Password" />
-            <button class="auth-btn" onclick="handleLogin()">Sign In</button>
-            <p id="login-error" class="auth-error"></p>
+          <div id="login-form" class="auth-form" role="tabpanel" aria-labelledby="tab-login" aria-hidden="false">
+            <div class="field-group">
+              <label class="field-label" for="login-email">School email</label>
+              <input type="email" id="login-email" class="auth-input" placeholder="you@school.edu" autocomplete="email" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="login-password">Password</label>
+              <input type="password" id="login-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password" />
+            </div>
+            <button type="button" class="auth-btn" onclick="handleLogin()">Sign In</button>
+            <p id="login-error" class="auth-error" role="status" aria-live="polite"></p>
           </div>
 
           <!-- Signup Form -->
-          <div id="signup-form" class="auth-form hidden">
-            <input type="email" id="signup-email" class="auth-input" placeholder="School Gmail (@gmail.com)" />
-            <input type="password" id="signup-password" class="auth-input" placeholder="Create Password (6+ characters)" />
-            <input type="text" id="signup-name" class="auth-input" placeholder="Full Name" />
+          <div id="signup-form" class="auth-form hidden" role="tabpanel" aria-labelledby="tab-signup" aria-hidden="true">
+            <div class="field-group">
+              <label class="field-label" for="signup-email">School Gmail</label>
+              <input type="email" id="signup-email" class="auth-input" placeholder="name@gmail.com" autocomplete="email" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="signup-password">Password</label>
+              <input type="password" id="signup-password" class="auth-input" placeholder="At least 6 characters" autocomplete="new-password" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="signup-name">Full name</label>
+              <input type="text" id="signup-name" class="auth-input" placeholder="Your name" autocomplete="name" />
+            </div>
             <div class="role-selector">
-              <p class="role-label">I am a:</p>
-              <div class="role-options">
-                <div class="role-option" data-role="student" onclick="selectRole('student')">
-                  <span class="role-icon">🎓</span>
+              <p class="role-label" id="role-label-heading">I am a:</p>
+              <div class="role-options" role="group" aria-labelledby="role-label-heading">
+                <button type="button" class="role-option" data-role="student" aria-pressed="false" onclick="selectRole('student')">
+                  <span class="role-icon" aria-hidden="true">🎓</span>
                   <span>Student</span>
-                </div>
-                <div class="role-option" data-role="parent" onclick="selectRole('parent')">
-                  <span class="role-icon">👨‍👩‍👧</span>
+                </button>
+                <button type="button" class="role-option" data-role="parent" aria-pressed="false" onclick="selectRole('parent')">
+                  <span class="role-icon" aria-hidden="true">👨‍👩‍👧</span>
                   <span>Parent</span>
-                </div>
-                <div class="role-option" data-role="counselor" onclick="selectRole('counselor')">
-                  <span class="role-icon">📋</span>
+                </button>
+                <button type="button" class="role-option" data-role="counselor" aria-pressed="false" onclick="selectRole('counselor')">
+                  <span class="role-icon" aria-hidden="true">📋</span>
                   <span>Counselor</span>
-                </div>
+                </button>
               </div>
             </div>
 
             <!-- Student extras -->
             <div id="student-fields" class="role-fields hidden">
-              <input type="text" id="student-id" class="auth-input" placeholder="Student ID (from school)" />
-              <input type="text" id="grade-level" class="auth-input" placeholder="Grade Level (9, 10, 11, 12)" />
+              <div class="field-group">
+                <label class="field-label" for="student-id">Student ID</label>
+                <input type="text" id="student-id" class="auth-input" placeholder="From your school ID card" autocomplete="off" />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="grade-level">Grade level</label>
+                <input type="text" id="grade-level" class="auth-input" placeholder="9, 10, 11, or 12" autocomplete="off" />
+              </div>
             </div>
 
             <!-- Parent extras -->
             <div id="parent-fields" class="role-fields hidden">
-              <input type="text" id="parent-student-code" class="auth-input" placeholder="Student Code (given by your student)" />
+              <div class="field-group">
+                <label class="field-label" for="parent-student-code">Student code</label>
+                <input type="text" id="parent-student-code" class="auth-input" placeholder="Code your student shares from their account" autocomplete="off" />
+              </div>
             </div>
 
             <!-- Counselor extras -->
             <div id="counselor-fields" class="role-fields hidden">
-              <input type="text" id="counselor-name" class="auth-input" placeholder="Full Name" />
-              <input type="text" id="counselor-dept" class="auth-input" placeholder="Department / Title" />
+              <div class="field-group">
+                <label class="field-label" for="counselor-name-signup">Full name</label>
+                <input type="text" id="counselor-name-signup" class="auth-input" placeholder="As it appears for students" autocomplete="name" />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="counselor-dept">Department or title</label>
+                <input type="text" id="counselor-dept" class="auth-input" placeholder="e.g. College &amp; career counseling" autocomplete="organization-title" />
+              </div>
             </div>
 
-            <button class="auth-btn" onclick="handleSignup()">Create Account</button>
-            <p id="signup-error" class="auth-error"></p>
+            <button type="button" class="auth-btn" onclick="handleSignup()">Create Account</button>
+            <p id="signup-error" class="auth-error" role="status" aria-live="polite"></p>
           </div>
         </div>
       </div>
@@ -92,6 +160,7 @@
 
       <!-- STUDENT APP -->
       <div id="student-app" class="hidden">
+        <a href="#content" class="skip-link app-skip">Skip to main content</a>
         <header>
           <div class="header-content">
             <div class="bee-logo">🐝</div>
@@ -101,27 +170,32 @@
             </div>
             <div class="header-actions">
               <span id="student-code-display" class="student-code-badge"></span>
-              <button class="signout-btn" onclick="signOut()">Sign Out</button>
+              <button type="button" class="signout-btn header-tool-btn" onclick="printMeetingSummary()" title="Print a summary for counselor meetings">Print summary</button>
+              <button type="button" class="signout-btn" onclick="signOut()">Sign Out</button>
             </div>
           </div>
-          <nav>
-            <button class="tab-btn" data-tab="college">📚 College + SAT Help</button>
-            <button class="tab-btn" data-tab="opportunities">🌟 Opportunities</button>
-            <button class="tab-btn" data-tab="scholarships">💰 Scholarships</button>
-            <button class="tab-btn" data-tab="progress">📊 My Progress</button>
-            <button class="tab-btn" data-tab="sat">📝 SAT Tracker</button>
-            <button class="tab-btn" data-tab="colleges">🏛️ College Research</button>
-            <button class="tab-btn" data-tab="todo">✅ To-Do List</button>
+          <nav class="app-nav" aria-label="Student sections">
+            <div class="app-nav-tablist" role="tablist">
+              <button type="button" role="tab" class="tab-btn" data-tab="college" aria-controls="content">📚 College + SAT Help</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="opportunities" aria-controls="content">🌟 Opportunities</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="scholarships" aria-controls="content">💰 Scholarships</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="progress" aria-controls="content">📊 My Progress</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="sat" aria-controls="content">📝 SAT Tracker</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="colleges" aria-controls="content">🏛️ College Research</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="todo" aria-controls="content">✅ To-Do List</button>
+            </div>
           </nav>
         </header>
-        <section id="content"></section>
+        <div id="student-main" role="main"><section id="content" aria-live="polite" tabindex="-1"></section></div>
         <footer>
-          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank">Franklin Online Newspaper</a></p>
+          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank" rel="noopener noreferrer">Franklin Online Newspaper</a></p>
+          <p class="footer-meta"><button type="button" class="footer-link-btn" onclick="openPrivacyModal()">Privacy &amp; data</button></p>
         </footer>
       </div>
 
       <!-- PARENT APP -->
       <div id="parent-app" class="hidden">
+        <a href="#parent-content" class="skip-link app-skip">Skip to main content</a>
         <header>
           <div class="header-content">
             <div class="bee-logo">🐝</div>
@@ -130,26 +204,31 @@
               <p id="parent-welcome">Parent Dashboard</p>
             </div>
             <div class="header-actions">
-              <button class="signout-btn" onclick="signOut()">Sign Out</button>
+              <button type="button" class="signout-btn header-tool-btn" onclick="printParentSummary()" title="Print a read-only summary of your student’s progress">Print summary</button>
+              <button type="button" class="signout-btn" onclick="signOut()">Sign Out</button>
             </div>
           </div>
-          <nav>
-            <button class="tab-btn" data-tab="parent-overview">👁️ Overview</button>
-            <button class="tab-btn" data-tab="parent-scholarships">💰 Scholarship Progress</button>
-            <button class="tab-btn" data-tab="parent-sat">📝 SAT Progress</button>
-            <button class="tab-btn" data-tab="parent-colleges">🏛️ College Research</button>
-            <button class="tab-btn" data-tab="parent-todo">✅ To-Do List</button>
-            <button class="tab-btn" data-tab="parent-transcript">📄 Transcript</button>
+          <nav class="app-nav" aria-label="Parent sections">
+            <div class="app-nav-tablist" role="tablist">
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-overview" aria-controls="parent-content">👁️ Overview</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-scholarships" aria-controls="parent-content">💰 Scholarship Progress</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-sat" aria-controls="parent-content">📝 SAT Progress</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-colleges" aria-controls="parent-content">🏛️ College Research</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-todo" aria-controls="parent-content">✅ To-Do List</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="parent-transcript" aria-controls="parent-content">📄 Transcript</button>
+            </div>
           </nav>
         </header>
-        <section id="parent-content"></section>
+        <div id="parent-main" role="main"><section id="parent-content" aria-live="polite" tabindex="-1"></section></div>
         <footer>
-          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank">Franklin Online Newspaper</a></p>
+          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank" rel="noopener noreferrer">Franklin Online Newspaper</a></p>
+          <p class="footer-meta"><button type="button" class="footer-link-btn" onclick="openPrivacyModal()">Privacy &amp; data</button></p>
         </footer>
       </div>
 
       <!-- COUNSELOR APP -->
       <div id="counselor-app" class="hidden">
+        <a href="#counselor-content" class="skip-link app-skip">Skip to main content</a>
         <header>
           <div class="header-content">
             <div class="bee-logo">🐝</div>
@@ -158,27 +237,72 @@
               <p id="counselor-welcome">Counselor Dashboard</p>
             </div>
             <div class="header-actions">
-              <button class="signout-btn" onclick="signOut()">Sign Out</button>
+              <button type="button" class="signout-btn header-tool-btn" onclick="printCounselorRosterSummary()" title="Print your student list and recent requests">Print summary</button>
+              <button type="button" class="signout-btn" onclick="signOut()">Sign Out</button>
             </div>
           </div>
-          <nav>
-            <button class="tab-btn" data-tab="counselor-students">👥 My Students</button>
-            <button class="tab-btn" data-tab="counselor-scholarships">💰 Scholarships</button>
-            <button class="tab-btn" data-tab="counselor-opportunities">🌟 Opportunities</button>
-            <button class="tab-btn" data-tab="counselor-resources">📚 Resources</button>
-            <button class="tab-btn" data-tab="counselor-transcript">📄 Upload Transcript</button>
-            <button class="tab-btn" data-tab="counselor-reminders">🔔 Reminders</button>
+          <nav class="app-nav" aria-label="Counselor sections">
+            <div class="app-nav-tablist" role="tablist">
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-students" aria-controls="counselor-content">👥 My Students</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-scholarships" aria-controls="counselor-content">💰 Scholarships</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-opportunities" aria-controls="counselor-content">🌟 Opportunities</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-resources" aria-controls="counselor-content">📚 Resources</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-transcript" aria-controls="counselor-content">📄 Upload Transcript</button>
+              <button type="button" role="tab" class="tab-btn" data-tab="counselor-reminders" aria-controls="counselor-content">🔔 Reminders</button>
+            </div>
           </nav>
         </header>
-        <section id="counselor-content"></section>
+        <div id="counselor-main" role="main"><section id="counselor-content" aria-live="polite" tabindex="-1"></section></div>
         <footer>
-          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank">Franklin Online Newspaper</a></p>
+          <p>Built by a Franklin High student & Business Club | <a href="https://fhsbuzz.com/" target="_blank" rel="noopener noreferrer">Franklin Online Newspaper</a></p>
+          <p class="footer-meta"><button type="button" class="footer-link-btn" onclick="openPrivacyModal()">Privacy &amp; data</button></p>
         </footer>
       </div>
 
     </div>
+
+    <div id="session-expired-modal" class="modal-overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="session-expired-title" aria-describedby="session-expired-desc">
+      <div class="modal-card modal-card-narrow">
+        <h2 id="session-expired-title">Session ended</h2>
+        <div class="modal-body">
+          <p id="session-expired-desc">Your sign-in expired or was ended in another tab. Sign in again to continue.</p>
+          <button type="button" class="auth-btn" onclick="closeSessionExpiredModal()">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="privacy-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
+      <div class="modal-card">
+        <button type="button" class="modal-close" onclick="closePrivacyModal()" aria-label="Close privacy dialog">×</button>
+        <h2 id="privacy-modal-title">Privacy &amp; data</h2>
+        <div class="modal-body">
+          <p>The Hive is a school-aligned college-prep tool. Account data (name, role, email, and content you save such as college lists and tasks) is stored securely so your dashboard can load on any device.</p>
+          <p><strong>Who sees what:</strong> Students own their workspace. Parents see a read-only view of their linked student. Counselors see students who list their email and items those students share (e.g. meeting requests, transcripts they upload).</p>
+          <p><strong>Education records:</strong> If your school treats certain items as education records, use The Hive in line with your district’s policies and FERPA. This app does not replace official transcripts or school systems.</p>
+          <p><strong>Analytics:</strong> We may count which sections you open to improve the product. Counts are stored in your browser; optional server logs require a database table you control.</p>
+          <p>Questions? Contact your counselor or school technology office.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="student-onboarding" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+      <div class="modal-card modal-card-narrow">
+        <h2 id="onboarding-title">Welcome to The Hive</h2>
+        <div class="modal-body">
+          <ol class="onboarding-steps">
+            <li><strong>Share your code</strong> with a parent so they can link their account (Parents tab at sign-up).</li>
+            <li><strong>Track scholarships &amp; opportunities</strong> from the lists, then manage status under My Progress.</li>
+            <li><strong>Add your counselor’s email</strong> in To-Do to enable meetings and notifications.</li>
+          </ol>
+          <p class="onboarding-hint">Use <strong>Print summary</strong> in the header before counselor meetings.</p>
+          <button type="button" class="auth-btn" onclick="dismissStudentOnboarding()">Got it</button>
+        </div>
+      </div>
+    </div>
     
     <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="analytics.js"></script>
     <script src="auth.js"></script>
     <script src="student.js"></script>
     <script src="parent.js"></script>
